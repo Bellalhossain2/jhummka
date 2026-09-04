@@ -5,39 +5,40 @@ import { Plus } from "lucide-react"
 import { PRODUCTS, formatPrice } from "@/lib/products"
 import { useCart } from "@/components/cart-provider"
 import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
 
 export function Collection() {
   const { addItem } = useCart()
-  const searchParams = useSearchParams()
-  const router = useRouter()
   const [activeCategory, setActiveCategory] = useState("All")
 
+  // Read?category= from URL without useSearchParams
   useEffect(() => {
-    const cat = searchParams.get("category")
-    if (cat) {
-      setActiveCategory(cat)
-    } else {
-      setActiveCategory("All")
+    if (typeof window!== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      const cat = params.get("category")
+      if (cat) {
+        setActiveCategory(cat)
+      }
     }
-  }, [searchParams])
+  }, [])
 
-  const categories = ["All",...Array.from(new Set(PRODUCTS.map((p: any) => p.category)))]
+  const allCats = PRODUCTS.map((p) => p.category)
+  const uniqueCats = Array.from(new Set(allCats))
+  const categories = ["All",...uniqueCats]
 
   const filtered = activeCategory === "All"
-  ? PRODUCTS
-    : PRODUCTS.filter((p: any) => p.category === activeCategory)
+   ? PRODUCTS
+    : PRODUCTS.filter((p) => p.category === activeCategory)
 
   const handleCategory = (cat: string) => {
     setActiveCategory(cat)
-    if (cat === "All") {
-      router.push(`/#collection`, { scroll: false })
-    } else {
-      router.push(`/?category=${cat}#collection`, { scroll: false })
-    }
-    setTimeout(() => {
+    if (typeof window!== "undefined") {
+      if (cat === "All") {
+        window.history.pushState(null, "", "/#collection")
+      } else {
+        window.history.pushState(null, "", `/?category=${cat}#collection`)
+      }
       document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" })
-    }, 100)
+    }
   }
 
   return (
@@ -72,7 +73,7 @@ export function Collection() {
       </div>
 
       <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((product: any) => (
+        {filtered.map((product) => (
           <article
             key={product.id}
             className={`group relative overflow-hidden border border-border/60 bg-card ${product.span? "lg:col-span-2" : ""}`}

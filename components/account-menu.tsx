@@ -1,0 +1,107 @@
+"use client"
+
+import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
+import { LogOut, User } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
+
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.15-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.85 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.67-2.84Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.85 9.9C6.71 7.31 9.14 5.38 12 5.38Z"
+      />
+    </svg>
+  )
+}
+
+export function AccountMenu({ compact = false }: { compact?: boolean }) {
+  const { user, loading, signInWithGoogle, signOut } = useAuth()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", onClick)
+    return () => document.removeEventListener("mousedown", onClick)
+  }, [])
+
+  if (loading) {
+    return <span className="size-[18px] animate-pulse rounded-full bg-muted" aria-hidden />
+  }
+
+  if (!user) {
+    return (
+      <button
+        aria-label="Sign in with Google"
+        onClick={signInWithGoogle}
+        className="flex items-center gap-2 transition-colors hover:text-gold"
+      >
+        {compact ? (
+          <User className="size-5" />
+        ) : (
+          <>
+            <GoogleIcon className="size-4" />
+            <span className="text-[11px] uppercase tracking-[0.2em]">Sign in</span>
+          </>
+        )}
+      </button>
+    )
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        aria-label="Account menu"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 transition-colors hover:text-gold"
+      >
+        {user.photoURL ? (
+          <Image
+            src={user.photoURL || "/placeholder.svg"}
+            alt={user.displayName ?? "Account"}
+            width={26}
+            height={26}
+            className="rounded-full border border-gold/40"
+          />
+        ) : (
+          <User className="size-[18px]" />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-3 w-60 border border-gold/20 bg-card p-4 shadow-2xl">
+          <p className="truncate font-serif text-lg font-medium text-foreground">
+            {user.displayName ?? "Welcome"}
+          </p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
+          <button
+            onClick={() => {
+              setOpen(false)
+              signOut()
+            }}
+            className="mt-4 flex w-full items-center justify-center gap-2 border border-border/60 py-2.5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:border-gold/40 hover:text-gold"
+          >
+            <LogOut className="size-3.5" />
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}

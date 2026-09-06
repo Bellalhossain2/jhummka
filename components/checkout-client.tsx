@@ -14,14 +14,16 @@ export function CheckoutClient() {
   const { items, subtotal, count, clearCart } = useCart()
   const { user, signInWithGoogle } = useAuth()
   const [placed, setPlaced] = useState(false)
+  const [paidTotal, setPaidTotal] = useState(0)
 
   const total = subtotal + (items.length? SHIPPING : 0)
 
   function handlePlaceOrder(e: React.FormEvent) {
     e.preventDefault()
+    setPaidTotal(total)
     console.log("[v0] Placing order for", count, "items, total", total)
     setPlaced(true)
-    clearCart()
+    setTimeout(() => clearCart(), 100)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -36,7 +38,7 @@ export function CheckoutClient() {
           <p className="mt-3 text-muted-foreground">
             Your heirloom jhumkas are being handcrafted. You will receive a confirmation shortly.
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">Shipping: $25 • Total paid: {formatPrice(total)}</p>
+          <p className="mt-2 text-sm text-muted-foreground">Shipping: $25 • Total paid: {formatPrice(paidTotal || total)}</p>
           <Link
             href="/"
             className="mt-8 inline-block bg-gold px-8 py-3 text-xs uppercase tracking-[0.3em] text-black hover:bg-[#d4a017]"
@@ -67,7 +69,6 @@ export function CheckoutClient() {
         </Link>
 
         <div className="mt-8 grid gap-12 lg:grid-cols-[1.2fr_0.8fr]">
-          {/* LEFT - Form */}
           <div>
             <h1 className="font-serif text-3xl lg:text-4xl">Checkout</h1>
 
@@ -113,7 +114,6 @@ export function CheckoutClient() {
             </form>
           </div>
 
-          {/* RIGHT - Summary */}
           <div className="h-fit border border-border/60 bg-muted/20 p-6 lg:sticky lg:top-8">
             <h2 className="font-serif text-xl">Order Summary ({count})</h2>
             <div className="mt-6 flex flex-col gap-4">

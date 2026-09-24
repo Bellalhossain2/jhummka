@@ -6,12 +6,12 @@ import { useCart } from "@/components/cart-provider"
 import { AccountMenu } from "@/components/account-menu"
 
 const NAV = [
-  { label: "Jhumkas", href: "/?category=All#collection" },
+    { label: "Jhumkas", href: "/?category=All#collection" },
   { label: "Necklaces", href: "/?category=Temple#collection" },
   { label: "Bridal", href: "/?category=Bridal#collection" },
   { label: "Heritage", href: "#craft" },
+  { label: "Shopkeeper", href: "/shopkeeper" }, 
 ]
-
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const { count, openCart } = useCart()
@@ -45,7 +45,7 @@ export function SiteHeader() {
             <a
               key={item.label}
               href={item.href}
-              className="text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-gold"
+             className={item.label === "Shopkeeper" ? "text-xs uppercase tracking-[0.2em] bg-[#D4AF37] text-white px-3 py-1.5 rounded-full" : "text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-gold"} 
             >
               {item.label}
             </a>
@@ -110,4 +110,4 @@ export function SiteHeader() {
       )}
     </header>
   )
-}
+} 

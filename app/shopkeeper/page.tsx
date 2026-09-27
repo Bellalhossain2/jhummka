@@ -17,9 +17,9 @@ export default function Shopkeeper() {
         <p>{form.house}, {form.city}, {form.state}, {form.country}</p>
         <div style={{marginTop:30, border:"2px dashed #000", padding:20, background:"#FFF9C4"}}>
   <h2 style={{color:"black", fontSize:22, fontWeight:"bold", marginBottom:15}}>Upload your product for sale</h2> 
-  <input id="p-title" placeholder="Product Name - ex: Temple Gold Jhumka" style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10}} />
-  <input id="p-price" type="number" placeholder="Price in USD - ex: 1200" style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10}} />
-  <textarea id="p-desc" placeholder="Description - 22kt, hand-forged..." style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10}} />
+  <input id="p-title" placeholder="Product Name - ex: Temple Gold Jhumka" style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10,color:"black",background:"white"}} />
+  <input id="p-price" type="number" placeholder="Price in USD - ex: 1200" style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10,color:"black",background:"white"}} />
+  <textarea id="p-desc" placeholder="Description - 22kt, hand-forged..." style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10,color:"black",background:"white"}} />
   <input id="p-image" type="file" accept="image/*" style={{marginTop:10, width:"100%"}} />
   <button onClick={()=>{
     const t = (document.getElementById('p-title') as HTMLInputElement).value;

@@ -18,11 +18,13 @@ export default function Shopkeeper() {
 <input id="p-price" type="number" placeholder="Price in USD - ex: 1200" style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10, color:"black", background:"white"}} />
 <textarea id="p-desc" placeholder="Description - 22kt, hand-forged..." style={{border:"1px solid #ccc", padding:12, borderRadius:8, width:"100%", marginTop:10, color:"black", background:"white"}} />
 <input id="p-image" type="file" accept="image/*" style={{marginTop:10, width:"100%", color:"black", background:"white", border:"1px solid #ccc", padding:12, borderRadius:8}} />
-<button onClick={()=>{ 
-    const t = (document.getElementById('p-title') as HTMLInputElement).value;
-    const p = (document.getElementById('p-price') as HTMLInputElement).value;
-    alert(`Product Ready!\nName: ${t}\nPrice: $${p}`);
-  }} style={{marginTop:15, background:"black", color:"white", padding:12, width:"100%", fontWeight:"bold"}}>
+<button onClick={()=>{
+  const t = (document.getElementById('p-title') as HTMLInputElement).value;
+  const p = (document.getElementById('p-price') as HTMLInputElement).value;
+  const img = (document.getElementById('p-image') as HTMLInputElement).files?.[0];
+  if(!img) { alert("Please select a photo first!"); return; }
+  alert(`Product Ready!\nName: ${t}\nPrice: $${p}\nPhoto: ${img.name}`);
+}} style={{marginTop:15, background:"black", color:"white", padding:12, width:"100%", fontWeight:"bold"}}> 
     Add Product to Store
   </button>
   <button onClick={() => setDone(false)} style={{marginTop:10, background:"#666", color:"white", padding:"8px 16px"}}>Logout</button>

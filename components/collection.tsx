@@ -92,8 +92,7 @@ export function Collection() {
                 <div className="flex gap-2">
                   <button onClick={() => addItem({ id: p.id, name: p.name, price: p.price, image: p.image })} className="flex-1 bg-white text-black text-center py-3 text-[11px] tracking-[2px] font-bold flex items-center justify-center gap-2 hover:bg-[#E6C15A] transition-colors">
                     <Plus size={14} /> ADD TO CART
-                  </button>
-                  <a href={`https://wa.me/919000000000?text=Hi Jhummka! I want ${encodeURIComponent(p.name)} - $${p.price}`} target="_blank" className="px-4 py-3 border border-[#333] text-[#888] text-[11px] hover:text-white hover:border-white">WHATSAPP</a>
+                  </button><a href={`https://wa.me/919000000000?text=Hi Jhummka! I want ${encodeURIComponent(p.name)} - $${p.price}`}                  
                 </div>
               </div>
             </div>

@@ -1,57 +1,48 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { db, storage } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-export default function Admin() {
+export default function AdminPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const handleUpload = async () => {
-    if (!name ||!price ||!file) {
-      setMsg("Fill all fields + image!");
-      return;
-    }
-    setLoading(true);
-    setMsg("Uploading...");
+  const upload = async () => {
+    if (!name ||!price ||!file) { setMsg("❌ Fill name, price + image"); return; }
+    setLoading(true); setMsg("⏳ Uploading to Firebase...");
     try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from("products").upload(fileName, file);
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+      const storageRef = ref(storage, `products/${Date.now()}-${file.name}`);
+      await uploadBytes(storageRef, file);
+      const imageUrl = await getDownloadURL(storageRef);
 
-      const { error: dbErr } = await supabase.from("products").insert({
-        name, price: Number(price), image_url: data.publicUrl,
-        description: name
+      await addDoc(collection(db, "products"), {
+        name, price: Number(price), image: imageUrl, image_url: imageUrl,
+        createdAt: serverTimestamp()
       });
-      if (dbErr) throw dbErr;
-      setMsg("✅ Product added! Check homepage!");
+
+      setMsg("✅ SUCCESS! Added to homepage! Go check jhummkatok.com");
       setName(""); setPrice(""); setFile(null);
-    } catch (e:any) {
-      setMsg("Error: " + e.message);
-    }
+    } catch (e:any) { setMsg("❌ Error: " + e.message); }
     setLoading(false);
   };
 
   return (
-    <div style={{maxWidth:500, margin:"50px auto", padding:20, fontFamily:"sans-serif"}}>
-      <h1 style={{fontSize:28, fontWeight:"bold"}}>JHUMMKA Admin</h1>
-      <p>Add new jhumka</p>
-      <input placeholder="Product Name (e.g. Royal Gold Jhumka)" value={name} onChange={e=>setName(e.target.value)} style={{width:"100%", padding:12, margin:"10px 0", border:"1px solid #ccc"}}/>
-      <input placeholder="Price (e.g. 499)" type="number" value={price} onChange={e=>setPrice(e.target.value)} style={{width:"100%", padding:12, margin:"10px 0", border:"1px solid #ccc"}}/>
-      <input type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} style={{margin:"10px 0"}}/>
-      <button onClick={handleUpload} disabled={loading} style={{width:"100%", padding:14, background:"black", color:"gold", fontWeight:"bold", cursor:"pointer"}}>
-        {loading? "Uploading..." : "ADD PRODUCT"}
+    <div style={{maxWidth:500, margin:"40px auto", padding:20, fontFamily:"sans-serif", color:"black"}}>
+      <h1 style={{fontSize:28, fontWeight:"bold"}}>JHUMMKA Admin 💎</h1>
+      <p>Upload new jhumka - will show on homepage</p>
+      <input placeholder="Product name - e.g. Gold Jhumka" value={name} onChange={e=>setName(e.target.value)} style={{width:"100%", padding:12, margin:"10px 0", border:"1px solid #ccc"}} />
+      <input placeholder="Price - e.g. 499" type="number" value={price} onChange={e=>setPrice(e.target.value)} style={{width:"100%", padding:12, margin:"10px 0", border:"1px solid #ccc"}} />
+      <input type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} style={{margin:"10px 0", width:"100%"}} />
+      {file && <p>Selected: {file.name}</p>}
+      <button onClick={upload} disabled={loading} style={{width:"100%", padding:14, background:"black", color:"#FFD700", fontWeight:"bold", fontSize:16, cursor:"pointer", marginTop:10}}>
+        {loading? "Uploading..." : "ADD PRODUCT TO SHOP"}
       </button>
-      <p style={{marginTop:15, fontWeight:"bold"}}>{msg}</p>
-      <a href="/" style={{display:"block", marginTop:20}}>← Back to website</a>
+      <p style={{marginTop:15, fontWeight:"bold", color: msg.includes("SUCCESS")? "green" : "red"}}>{msg}</p>
+      <div style={{marginTop:30}}><a href="/">← View Homepage</a></div>
     </div>
   );
 } 

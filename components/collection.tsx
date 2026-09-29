@@ -89,7 +89,7 @@ export function Collection() {
               </div>
               <div className="p-5">
                 <h3 className="m-0 text-white text-[14px] tracking-[1px] font-light">{p.name}</h3>
-                <p className="text-[#C5A880] mt-2 mb-4 font-bold">₹{p.price.toLocaleString("en-IN")}</p>
+                <p className="text-[#C5A880] mt-2 mb-4 font-bold">${p.price.toLocaleString("en-IN")}</p>
                 <div className="flex gap-2">
                   <button onClick={() => addItem({ id: p.id, name: p.name, price: p.price, image: p.image })} className="flex-1 bg-white text-black text-center py-3 text-[11px] tracking-[2px] font-bold flex items-center justify-center gap-2 hover:bg-[#E6C15A] transition-colors">
                     <Plus size={14} /> ADD TO CART

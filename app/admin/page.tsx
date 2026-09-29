@@ -96,7 +96,7 @@ export default function AdminPage(){
               <img src={p.image} style={{width:"100%", height:150, objectFit:"cover", borderRadius:4}} />
               <p style={{fontSize:13, margin:"8px 0 2px", fontWeight:"bold"}}>{p.name}</p>
               <p style={{fontSize:11, margin:"0 0 4px", color:"#aaa", lineHeight:"14px"}}>{p.description?.slice(0,60)}...</p>
-              <p style={{color:"#C5A880", fontWeight:"bold", margin:"0 0 8px"}}>₹{p.price}</p>
+              <p style={{color:"#C5A880", fontWeight:"bold", margin:"0 0 8px"}}>${p.price}</p>
               <button onClick={()=>del(p.id)} style={{width:"100%", background:"#ff3b3b", color:"#fff", border:"none", padding:8, cursor:"pointer", fontWeight:"bold", borderRadius:4}}>🗑️ DELETE</button>
             </div>
           ))}

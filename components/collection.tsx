@@ -1,61 +1,51 @@
 "use client"
-import { useState, useEffect } from "react"
-import Image from "next/image"
+import { useEffect, useState } from "react"
+import { db } from "@/lib/firebase"
+import { collection, getDocs, query, orderBy } from "firebase/firestore"
 import { Plus } from "lucide-react"
 import { useCart } from "./cart-provider"
-import { supabase } from "@/lib/supabase"
 
 const categories = ["all", "jhumkas", "necklaces", "bridal", "heritage"]
 
-export function Collection() {
-  const [activeCategory, setActiveCategory] = useState("all")
+export default function Collection() {
   const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const { addItem } = useCart()
+  const [filter, setFilter] = useState("all")
+  const { addToCart } = useCart()
 
   useEffect(() => {
-    async function fetchProducts() {
-      const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false })
-      if (data) setProducts(data)
-      setLoading(false)
+    async function load() {
+      const q = query(collection(db, "products"), orderBy("createdAt", "desc"))
+      const snap = await getDocs(q)
+      setProducts(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })))
     }
-    fetchProducts()
+    load()
   }, [])
 
-  const filtered = activeCategory === "all"? products : products.filter((p) => p.category === activeCategory)
+  const filtered = filter === "all" ? products : products.filter(p => p.category === filter)
 
   return (
-    <section className="bg-black py-20 px-6">
-      <div className="flex justify-center gap-3 mb-12 flex-wrap">
-        {categories.map((cat) => (
-          <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-6 py-2 text-[11px] tracking-[2px] border ${activeCategory === cat? "bg-white text-black border-white" : "bg-transparent text-[#888] border-[#333]"}`}>
-            {cat.toUpperCase()}
-          </button>
+    <section id="collection" style={{ padding: "40px 20px", background: "#fff", color: "#000" }}>
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px", justifyContent: "center" }}>
+        {categories.map(c => (
+          <button key={c} onClick={() => setFilter(c)} style={{ padding: "8px 16px", border: "1px solid #000", background: filter === c ? "#000" : "#fff", color: filter === c ? "#FFEB3B" : "#000", cursor: "pointer", textTransform: "capitalize" }}>{c}</button>
         ))}
       </div>
-
-      {loading && <p className="text-center text-[#444]">Loading jewels...</p>}
-      <p className="text-center text-[#888] text-[11px] mb-4">{products.length} pieces</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filtered.map((p) => (
-          <div key={p.id} className="bg-[#151515] border border-[#222] group overflow-hidden">
-            <div className="h-[380px] overflow-hidden bg-black">
-              <Image src={p.image} alt={p.name} width={400} height={400} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-            </div>
-            <div className="p-5">
-              <h3 className="text-white text-[14px] tracking-[1px] font-light">{p.name}</h3>
-              <p className="text-[#C5A880] mt-2 mb-4 font-bold">{"$" + p.price.toLocaleString("en-US")}</p>
-              <div className="flex gap-2">
-                <button onClick={() => addItem({ id: p.id, name: p.name, price: p.price, image: p.image })} className="flex-1 bg-white text-black py-3 text-[11px] tracking-[2px] font-bold flex items-center justify-center gap-1">
-                  <Plus size={14} /> ADD TO CART
-                </button>
-                <a href={`https://wa.me/919000000000?text=Hi Jhummka! I want ${encodeURIComponent(p.name)} - ${p.price}`} target="_blank" className="px-4 py-3 border border-[#333] text-[#888] text-[11px]">WHATSAPP</a>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+        {filtered.map(p => (
+          <div key={p.id} style={{ border: "1px solid #ddd", background: "#fff" }}>
+            <img src={p.image} alt={p.name} style={{ width: "100%", height: "250px", objectFit: "cover" }} />
+            <div style={{ padding: "15px" }}>
+              <h3 style={{ fontWeight: "bold", margin: "0 0 5px 0" }}>{p.name}</h3>
+              <p style={{ color: "#666", fontSize: "13px", margin: "0 0 10px 0" }}>{p.description || ""}</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <b>{"$" + p.price}</b>
+                <button onClick={() => addToCart(p)} style={{ background: "#000", color: "#FFEB3B", border: "none", padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}><Plus size={14} /> Add</button>
               </div>
             </div>
           </div>
         ))}
       </div>
+      {filtered.length === 0 && <p style={{ textAlign: "center", marginTop: "20px" }}>No products yet. Add from /admin</p>}
     </section>
   )
 } 

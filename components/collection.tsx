@@ -50,7 +50,7 @@ export function Collection() {
                 <button onClick={() => addItem({ id: p.id, name: p.name, price: p.price, image: p.image })} className="flex-1 bg-white text-black py-3 text-[11px] tracking-[2px] font-bold flex items-center justify-center gap-1">
                   <Plus size={14} /> ADD TO CART
                 </button>
-                <a href={`https://wa.me/919000000000?text=Hi Jhummka! I want ${encodeURIComponent(p.name)} - $${p.price}`} target="_blank" className="px-4 py-3 border border-[#333] text-[#888] text-[11px]">WHATSAPP</a>
+                <a href={`https://wa.me/919000000000?text=Hi Jhummka! I want ${encodeURIComponent(p.name)} - ${p.price}`} target="_blank" className="px-4 py-3 border border-[#333] text-[#888] text-[11px]">WHATSAPP</a>
               </div>
             </div>
           </div>

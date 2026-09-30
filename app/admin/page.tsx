@@ -79,6 +79,23 @@ export default function AdminPage(){
           <optin value="dress">dress</optin>
           <option value="fashion">fashion</option>
           <option value="barber">barber</option>
+          <option value="kids">kids</option>
+          <option value="beauty">beauty</option>
+          <option value="household">household</option>
+          <optin value="bags">bags</optin>
+          <option value="sports">sports</option>
+          <option value="men">men</option>
+          <option value="women">women</option>
+          <option value="crafts">crafts</option>
+          <option value="industrial">industrial</option>
+          <option value="office">office</option>
+          <option value="pets">pets</option>
+          <option value="musical">musical</option>
+          <option value="food">food</option>
+          <option value="books">books</option>
+          <option value="kitchen">kitchen</option>
+          <option value="health">health</option>
+          <option value="atomotive">atomotive</option>
         </select>
         <label>Description (NEW!):</label>
         <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description - 22kt, hand-forged..." style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block", height:80}} />

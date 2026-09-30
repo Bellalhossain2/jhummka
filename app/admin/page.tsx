@@ -7,10 +7,11 @@ export default function AdminPage(){
   const [name,setName]=useState("")
   const [price,setPrice]=useState("")
   const [desc,setDesc]=useState("")
+  const [category,setCategory]=useState("jhumkas")
   const [image,setImage]=useState("")
   const [loading,setLoading]=useState(false)
-  const [msg,setMsg]=useState("")
   const [products,setProducts]=useState<any[]>([])
+  const [msg,setMsg]=useState("")
 
   const load = async()=>{
     const q = query(collection(db,"products"), orderBy("createdAt","desc"))
@@ -26,77 +27,84 @@ export default function AdminPage(){
     const url=URL.createObjectURL(file)
     img.onload=()=>{
       const canvas=document.createElement("canvas")
-      const MAX=700
+      const MAX=800
       let w=img.width,h=img.height
       if(w>h){ if(w>MAX){ h=h*MAX/w; w=MAX; } } else { if(h>MAX){ w=w*MAX/h; h=MAX; } }
       canvas.width=w; canvas.height=h
       canvas.getContext("2d")?.drawImage(img,0,0,w,h)
-      const data=canvas.toDataURL("image/jpeg",0.6)
-      setImage(data)
-      setMsg(`✅ Image compressed: ${Math.round(data.length/1024)}KB`)
+      const dataUrl=canvas.toDataURL("image/jpeg",0.7)
+      setImage(dataUrl)
       URL.revokeObjectURL(url)
     }
     img.src=url
   }
 
-  const addProduct=async(e:any)=>{
-    e.preventDefault()
-    if(!name||!price||!image) return alert("Name, Price, Image required")
+  const addProduct = async()=>{
+    if(!name ||!price ||!image){ alert("Fill name, price, image"); return }
     setLoading(true)
-    await addDoc(collection(db,"products"), {
-      name,
-      price:Number(price),
-      description: desc || "22K Gold • Handcrafted • BIS Hallmarked",
-      image,
-      category:"Jhumkas",
-      createdAt:serverTimestamp()
-    })
-    setName(""); setPrice(""); setDesc(""); setImage(""); setMsg("✅ Added!")
-    setLoading(false); load()
+    try{
+      await addDoc(collection(db,"products"),{
+        name, price:Number(price), description:desc, category, image, createdAt:serverTimestamp()
+      })
+      setName(""); setPrice(""); setDesc(""); setImage(""); setCategory("jhumkas")
+      setMsg("Added! ✅")
+      load()
+    }catch(err:any){ alert(err.message) }
+    setLoading(false)
   }
 
-  const del = async(id:string)=>{
-    if(!confirm("Delete?")) return
+  const delProduct = async(id:string)=>{
+    if(!confirm("Delete this product?")) return
     await deleteDoc(doc(db,"products",id))
     load()
   }
 
-  return(
-    <div style={{minHeight:"100vh", background:"#0a0a0a", color:"#fff", padding:30, fontFamily:"sans-serif"}}>
-      <div style={{maxWidth:900, margin:"0 auto"}}>
-        <h1 style={{letterSpacing:4, margin:0}}>JHUMMKA ADMIN</h1>
-        <a href="/" style={{color:"#C5A880", fontSize:12, textDecoration:"none"}}>← View Shop</a>
+  return (
+    <div style={{padding:20, maxWidth:700, margin:"0 auto", background:"#fff", minHeight:"100vh", color:"#000"}}>
+      <h1 style={{fontWeight:"bold", fontSize:24}}>JHUMMKA Admin 💎 v4</h1>
+      <p style={{color:"green"}}>{msg}</p>
 
-        <div style={{background:"#151515", border:"1px solid #222", padding:24, marginTop:20, borderRadius:8}}>
-          <h3 style={{color:"#C5A880", marginTop:0}}>Add New Jhumka</h3>
-          <form onSubmit={addProduct} style={{display:"grid", gap:12}}>
-            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Product Name - e.g. Royal Temple Jhumka" style={{padding:14, background:"#000", border:"1px solid #333", color:"#fff", borderRadius:4}} />
-            <input value={price} onChange={e=>setPrice(e.target.value)} type="number" placeholder="Price - e.g. 1299" style={{padding:14, background:"#000", border:"1px solid #333", color:"#fff", borderRadius:4}} />
+      <div style={{border:"2px solid #000", padding:20, marginTop:15}}>
+        <label>Product Name:</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Temple Gold Jhumka" style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block"}} />
 
-            {/* NEW DESCRIPTION FIELD */}
-            <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description - e.g. 22K Gold plated, Lightweight for daily wear, Temple design, Gift box included..." rows={3} style={{padding:14, background:"#000", border:"1px solid #333", color:"#fff", borderRadius:4, resize:"vertical"}} />
+        <label>Price in USD:</label>
+        <input value={price} onChange={e=>setPrice(e.target.value)} type="number" placeholder="1200" style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block"}} />
 
-            <div style={{border:"1px dashed #444", padding:12, borderRadius:4}}>
-              <label style={{fontSize:12, color:"#aaa"}}>Product Photo (auto compresses): </label>
-              <input type="file" accept="image/*" onChange={onFile} style={{marginLeft:10, color:"#fff"}} />
-              {msg && <p style={{color:"#C5A880", fontSize:11, margin:"8px 0 0"}}>{msg}</p>}
-              {image && <img src={image} style={{width:100, height:100, objectFit:"cover", marginTop:10, border:"1px solid #333"}} />}
+        <label>Category:</label>
+        <select value={category} onChange={e=>setCategory(e.target.value)} style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block"}}>
+          <option value="jhumkas">jhumkas</option>
+          <option value="necklaces">necklaces</option>
+          <option value="bridal">bridal</option>
+          <option value="heritage">heritage</option>
+        </select>
+
+        <label>Description (NEW!):</label>
+        <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description - 22kt, hand-forged, lightweight, bridal wear..." style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block", height:80}} />
+
+        <label>Photo (auto-compress):</label>
+        <input type="file" accept="image/*" onChange={onFile} style={{marginBottom:10, display:"block"}} />
+        {image && <img src={image} style={{width:80, height:80, objectFit:"cover", border:"1px solid #000", marginBottom:10}} />}
+
+        <button onClick={addProduct} disabled={loading} style={{width:"100%", background:"black", color:"#FFEB3B", padding:15, fontWeight:"bold", border:"none", cursor:"pointer"}}>
+          {loading? "ADDING..." : "ADD PRODUCT TO STORE"}
+        </button>
+      </div>
+
+      <h2 style={{marginTop:30, fontWeight:"bold"}}>All Products ({products.length}) - With Delete Button</h2>
+      <div style={{marginTop:10}}>
+        {products.map(p=>(
+          <div key={p.id} style={{border:"1px solid #ccc", padding:10, display:"flex", gap:10, alignItems:"center", marginBottom:8}}>
+            <img src={p.image} style={{width:50, height:50, objectFit:"cover"}} />
+            <div style={{flex:1}}>
+              <b>{p.name}</b> - ${p.price}<br/>
+              <small style={{color:"#666"}}>{p.category} | {p.description?.slice(0,60) || p.desc?.slice(0,60) || "No desc"}</small>
             </div>
-
-            <button disabled={loading} style={{background:"#E6C15A", color:"#000", padding:14, fontWeight:"bold", letterSpacing:1, cursor:"pointer", border:"none", borderRadius:4}}>
-              {loading?"Adding...":"ADD PRODUCT"}
-            </button>
-          </form>
-        </div>
-
-        <h3 style={{marginTop:40, letterSpacing:2}}>ALL PRODUCTS ({products.length})</h3>
-        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12, marginTop:16}}>
-          {products.map((p:any)=>(
-  <div key={p.id} style={{background:"#151515", border:"1px solid #222", padding:10, borderRadius:6}}>
-    <img src={p.image} style={{width:"100%", height:150, objectFit:"cover", borderRadius:4}} />
-    <p style={{fontSize:13, margin:"8px 0 2px", fontWeight:"bold"}}>{p.name}</p>
-    <p style={{fontSize:11, margin:"0 0 4px", color:"#aaa", lineHeight:"14px"}}>{p.description?.slice(0,60)}...</p>
-    <p style={{color:"#C5A880", fontWeight:"bold", margin:"0 0 8px"}}>${p.price}</p>
-    <button onClick={()=>del(p.id)} style={{width:"100%", background:"#ff3b3b", color:"#fff", border:"none", padding:8, cursor:"pointer", fontWeight:"bold", borderRadius:4}}>DELETE</button>
-  </div>
-))} 
+            <button onClick={()=>delProduct(p.id)} style={{background:"red", color:"white", border:"none", padding:"6px 12px", cursor:"pointer", fontSize:12}}>DELETE</button>
+          </div>
+        ))}
+      </div>
+      <a href="/" style={{display:"block", marginTop:20}}>← View Shop</a>
+    </div>
+  )
+} 

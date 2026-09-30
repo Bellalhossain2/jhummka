@@ -1,37 +1,37 @@
 "use client"
 import { useEffect, useState } from "react"
 import { db } from "@/lib/firebase"
-import { collection, getDocs, query, orderBy } from "firebase/firestore"
+import { collection as fbCollection, getDocs, query, orderBy } from "firebase/firestore"
 import { Plus } from "lucide-react"
 import { useCart } from "./cart-provider"
 
 const categories = ["all", "jhumkas", "necklaces", "bridal", "heritage"]
 
-export default function Collection() {
+export function Collection() {
   const [products, setProducts] = useState<any[]>([])
   const [filter, setFilter] = useState("all")
   const { addToCart } = useCart()
 
   useEffect(() => {
     async function load() {
-      const q = query(collection(db, "products"), orderBy("createdAt", "desc"))
+      const q = query(fbCollection(db, "products"), orderBy("createdAt", "desc"))
       const snap = await getDocs(q)
       setProducts(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })))
     }
     load()
   }, [])
 
-  const filtered = filter === "all" ? products : products.filter(p => p.category === filter)
+  const filtered = filter === "all" ? products : products.filter((p: any) => p.category === filter)
 
   return (
     <section id="collection" style={{ padding: "40px 20px", background: "#fff", color: "#000" }}>
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px", justifyContent: "center" }}>
-        {categories.map(c => (
+        {categories.map((c: string) => (
           <button key={c} onClick={() => setFilter(c)} style={{ padding: "8px 16px", border: "1px solid #000", background: filter === c ? "#000" : "#fff", color: filter === c ? "#FFEB3B" : "#000", cursor: "pointer", textTransform: "capitalize" }}>{c}</button>
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-        {filtered.map(p => (
+        {filtered.map((p: any) => (
           <div key={p.id} style={{ border: "1px solid #ddd", background: "#fff" }}>
             <img src={p.image} alt={p.name} style={{ width: "100%", height: "250px", objectFit: "cover" }} />
             <div style={{ padding: "15px" }}>
@@ -48,4 +48,6 @@ export default function Collection() {
       {filtered.length === 0 && <p style={{ textAlign: "center", marginTop: "20px" }}>No products yet. Add from /admin</p>}
     </section>
   )
-} 
+}
+
+export default Collection 

@@ -73,7 +73,12 @@ export default function AdminPage(){
           <option value="electronics">electronics</option>
           <option value="dress">dress</option>
           <option value="home">home</option>
-          <option value="jewelry">jerelry</option>
+          <option value="jewelry">jewelry</option>
+          <option value="cosmetics">cosmetics</option>
+          <option value="toys">toys</option>
+          <optin value="dress">dress</optin>
+          <option value="fashion">fashion</option>
+          <option value="barber">barber</option>
         </select>
         <label>Description (NEW!):</label>
         <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description - 22kt, hand-forged..." style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block", height:80}} />

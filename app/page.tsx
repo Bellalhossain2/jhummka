@@ -10,7 +10,7 @@ export default function Page(){
   useEffect(()=>{
     getDocs(collection(db,"products")).then(s=>setProducts(s.docs.map(d=>({id:d.id,...d.data()}))))
   },[])
-  const cats=["All","electronics","jewelry","car","home","jhumkas"]
+  const cats=["All","electronics","jewelry","car","home","jhumkas","dress","cosmetics","toys","fashion","barber"]
   const filtered=products.filter(p=>{
     const mCat=cat==="All"||p.category?.toLowerCase()===cat.toLowerCase()
     const mSearch=p.name?.toLowerCase().includes(search.toLowerCase())

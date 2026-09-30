@@ -70,10 +70,10 @@ export default function AdminPage(){
         <input value={price} onChange={e=>setPrice(e.target.value)} type="number" placeholder="1200" style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block"}} />
         <label>Category:</label>
         <select value={category} onChange={e=>setCategory(e.target.value)} style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block"}}>
-          <option value="jhumkas">jhumkas</option>
-          <option value="necklaces">necklaces</option>
-          <option value="bridal">bridal</option>
-          <option value="heritage">heritage</option>
+          <option value="electronics">electronics</option>
+          <option value="dress">dress</option>
+          <option value="home">home</option>
+          <option value="jewelry">jerelry</option>
         </select>
         <label>Description (NEW!):</label>
         <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description - 22kt, hand-forged..." style={{width:"100%", padding:10, border:"1px solid #000", marginBottom:10, display:"block", height:80}} />

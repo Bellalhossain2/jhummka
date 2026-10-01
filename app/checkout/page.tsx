@@ -1,64 +1,36 @@
-  "use client";
-import { useState, useEffect } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+"use client"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+export default function Checkout(){
+const id = useSearchParams().get('id')
+const [p, setP] = useState<any>(null)
 
-function PayForm({ amount }: { amount: number }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+useEffect(()=>{
+  const all = JSON.parse(localStorage.getItem('jhummka_products') || '[]')
+  const found = all.find((x:any)=> String(x.id) === String(id))
+  if(found) setP(found)
+  else setP({name: "Jhumka Product", price: "5", image: "", category: "fashion"})
+},[id])
 
-  const pay = async (e: any) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setLoading(true);
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: window.location.origin + "/success" },
-    });
-    if (error) setMsg(error.message || "Failed");
-    setLoading(false);
-  };
-
-  return (
-    <form onSubmit={pay} className="space-y-6 bg-black p-6 border border-yellow-200/20">
-      <h2 className="text-[#f5e6a0] text-xl tracking-widest">PAY WITH CARD</h2>
-      <PaymentElement />
-      {msg && <p className="text-red-400 text-sm">{msg}</p>}
-      <button disabled={!stripe || loading} className="w-full bg-[#f5e6a0] text-black py-4 font-bold">
-        {loading ? "PROCESSING..." : `PAY $${amount} NOW`}
-      </button>
-      <p className="text-gray-500 text-xs text-center">Test card: 4242 4242 4242 4242 - 12/34 - 123</p>
-    </form>
-  );
-}
-
-export default function CheckoutPage() {
-  const [secret, setSecret] = useState("");
-  const amount = 99; // your product total - change this
-
-  useEffect(() => {
-    fetch("/api/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount }),
-    })
-      .then(r => r.json())
-      .then(d => setSecret(d.clientSecret));
-  }, []);
-
-  if (!secret) return <div className="p-10 text-[#f5e6a0] text-center">Loading secure payment...</div>;
-
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] flex justify-center pt-20 px-4">
-      <div className="w-full max-w-md">
-        <Elements stripe={stripePromise} options={{ clientSecret: secret, appearance: { theme: "night" } }}>
-          <PayForm amount={amount} />
-        </Elements>
-      </div>
-    </div>
-  );
+return(
+  <div className="min-h-screen bg-black text-white p-4">
+   <h1 className="text-yellow-400 font-black text-2xl">JHUMMKA BAZAAR - Checkout</h1>
+   <div className="bg-white text-black p-4 rounded max-w-md mx-auto mt-6">
+    <div className="font-bold text-pink-700 text-lg">{p?.name}</div>
+    <div className="text-yellow-600 font-bold text-xl">${p?.price}</div>
+    {p?.image && <img src={p.image} className="w-full h-64 object-cover rounded mt-2" />}
+   
+    <input placeholder="Your Name" className="w-full border p-3 rounded mt-4" />
+    <input placeholder="Phone - 017..." className="w-full border p-3 rounded mt-2" />
+    <input placeholder="Full Address" className="w-full border p-3 rounded mt-2" />
+   
+    <button onClick={()=>alert('Order Received! Cash on Delivery')} className="bg-yellow-400 text-black font-bold w-full py-3 rounded-full mt-4">
+     PLACE ORDER - CASH ON DELIVERY
+    </button>
+   
+    <button onClick={()=>window.location.href='/'} className="w-full mt-2 text-sm">Back to Shop</button>
+   </div>
+  </div>
+)
 } 

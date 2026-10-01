@@ -7,7 +7,7 @@ export default function AdminPage(){
   const [name,setName]=useState("")
   const [price,setPrice]=useState("")
   const [desc,setDesc]=useState("")
-  const [category,setCategory]=useState("jhumkas")
+  const [category,setCategory]=useState("electronics")
   const [image,setImage]=useState("")
   const [loading,setLoading]=useState(false)
   const [products,setProducts]=useState<any[]>([])

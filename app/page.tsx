@@ -17,7 +17,7 @@ const filtered=products.filter(p=>{
   return mCat&&mSearch
 })
 return(
-  <div className="min-h-screen bg-[#f5f5f5]">
+  <div className="min-h-screen bg-black">
    <header className="sticky top-0 z-50 bg-black text-white p-3">
     <div className="max-w-7xl mx-auto flex gap-3 items-center">
      <h1 className="font-black text-xl text-yellow-400">JHUMMKA BAZAAR</h1>

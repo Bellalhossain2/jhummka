@@ -30,7 +30,7 @@ return(
    </header>
    <div className="max-w-7xl mx-auto p-3 flex gap-2 overflow-auto">
     {cats.map(c=>(
-     <button key={c} onClick={()=>setCat(c)} className={`px-4 py-1 rounded-full text-sm whitespace-nowrap ${cat===c?'bg-black text-white':'bg-white'}`}>{c.toUpperCase()}</button>
+     <button key={c} onClick={()=>setCat(c)} className={`px-4 py-1 rounded-full text-sm whitespace-nowrap ${cat===c?'bg-black text-white':'bg-yellow-400 text-black'}`}>{c.toUpperCase()}</button>
     ))}
    </div>
    <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 p-3">

@@ -10,7 +10,7 @@ const [cat,setCat]=useState("All")
 useEffect(()=>{
   getDocs(collection(db,"products")).then(s=>setProducts(s.docs.map(d=>({id:d.id,...d.data()}))))
 },[])
-const cats=["All","electronics","jewelry","kids","home","household","dress","cosmetics","toys","fashion","barber","men","shorts","musical","beauty","office","women","books","grocery","sports"]
+const cats=["All","jhumkas","electronics","jewelry","kids","home","household","dress","cosmetics","toys","fashion","barber","men","shorts","musical","beauty","office","women","books","grocery","sports"]
 const filtered=products.filter(p=>{
   const mCat=cat==="All"||p.category?.toLowerCase()===cat.toLowerCase()
   const mSearch=p.name?.toLowerCase().includes(search.toLowerCase())

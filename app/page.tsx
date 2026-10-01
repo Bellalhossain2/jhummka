@@ -37,7 +37,7 @@ return(
     {filtered.map((p:any)=>(
      <div key={p.id} className="bg-white p-3 rounded">
       <img src={p.image} className="w-full h-40 object-cover rounded" />
-      <div className="font-bold mt-2 text-black-700 text-[16px]">{p.name}</div>
+      <div className="font-bold mt-2 text-pink-700 text-[16px]">{p.name}</div>
       <div className="text-yellow-600">${p.price}</div>
       <div className="text-xs text-gray-500">{p.category}</div>
      </div>

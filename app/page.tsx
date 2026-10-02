@@ -40,8 +40,7 @@ return(
       <div className="font-bold mt-2 text-pink-700 text-[16px]">{p.name}</div>
       <div className="text-yellow-600">${p.price}</div>
       <div className="text-xs text-gray-500">{p.category}</div>
-       <button onClick={()=>window.location.href=`/checkout?id=${p.id}`} className="bg-yellow-400 text-black font-bold w-full py-2 rounded-full mt-2 text-sm">Shop Now</button>      </div>
-    ))}
+       <button onClick={()=>window.location.href=`/checkout?id=${p.id}&name=${encodeURIComponent(p.name)}&price=${p.price}&image=${encodeURIComponent(p.image||'')}`} className="bg-yellow-400 text-black font-bold w-full py-2 rounded-full mt-2 text-sm">Shop Now</button>     ))}
    </div>
   </div>
 )

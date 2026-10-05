@@ -43,8 +43,8 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[600px] mx-auto bg-white p-4 pb-24">
+    <div className="min-h-screen bg-gray-50 text-black">
+      <div className="max-w-[600px] mx-auto bg-white p-4 pb-24 text-black [&_*]:!text-black">
         <div className="flex items-start gap-2 border-b pb-3">
           <div className="w-3 h-3 bg-black rounded-full mt-1"></div>
           <div className="flex-1">

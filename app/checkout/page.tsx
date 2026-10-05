@@ -1,141 +1,144 @@
 "use client"
-import { Suspense, useState, useEffect } from "react"
+import { useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { db } from "@/lib/firebase"
-import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore"
 
-function CheckoutContent(){
-const s=useSearchParams()
-const id=s.get('id')||""
-const [p,setP]=useState<any>(null)
-const [cust,setCust]=useState({name:"",phone:"",address:""})
-const [payMethod,setPayMethod]=useState("cod")
-const [txnId,setTxnId]=useState("")
-const [senderNum,setSenderNum]=useState("")
-const [done,setDone]=useState(false)
-const [orderId,setOrderId]=useState("")
+export default function CheckoutPage() {
+  const searchParams = useSearchParams()
+  // Get product from URL or use default
+  const product = {
+    name: searchParams.get('name') || 'Mobile Stand',
+    price: Number(searchParams.get('price')) || 9.94,
+    image: searchParams.get('image') || '/product.jpg',
+    qty: 1
+  }
 
-// === CHANGE THESE TO YOUR BUSINESS ACCOUNTS ===
-const MY_BKASH = "017XXXXXXXX - Bellal Hossain (Personal)"
-const MY_NAGAD = "017XXXXXXXX - Bellal Hossain"
-const MY_BANK = "Bank: XXXX - Ac: 123456789 - Bellal Hossain"
+  const [coupon, setCoupon] = useState('')
+  const [discount, setDiscount] = useState(1.54)
+  const [showCoupon, setShowCoupon] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('paypal')
 
-useEffect(()=>{
-  if(!id) return
-  getDoc(doc(db,"products",id)).then(snap=>{
-   if(snap.exists()) setP({id:snap.id,...snap.data()})
-  })
-},[id])
+  // Calculations like your screenshot
+  const itemTotal = product.price
+  const subtotal = itemTotal - discount // 8.40
+  const shipping = 2.99
+  const tax = 1.02
+  const orderTotal = subtotal + shipping + tax // 12.41
 
-const placeOrder = async()=>{
-  if(!cust.name||!cust.phone||!cust.address){ alert("Fill Name, Phone, Address"); return }
-  if(payMethod!=="cod" &&!txnId){ alert("Please enter Transaction ID after payment"); return }
+  const applyCoupon = () => {
+    if(coupon.toUpperCase() === 'SAVE10') {
+      setDiscount(2.5)
+      alert('Coupon applied!')
+    } else {
+      setDiscount(1.54)
+      alert('Use code SAVE10 for extra discount')
+    }
+  }
 
-  try{
-   const orderRef = await addDoc(collection(db,"orders"),{
-    productId: p.id,
-    productName: p.name,
-    price: p.price,
-    category: p.category,
-    image: p.image,
-    customerName: cust.name,
-    customerPhone: cust.phone,
-    customerAddress: cust.address,
-    paymentMethod: payMethod, // cod, bkash, nagad, bank
-    transactionId: txnId,
-    senderNumber: senderNum,
-    shippingStatus: "pending", // pending, paid_shopkeeper, shipped, delivered
-    profit: 0, // you can add later
-    createdAt: serverTimestamp(),
-    status: payMethod==="cod"? "new_cod" : "paid_wait_verify"
-   })
-   setOrderId(orderRef.id)
-   setDone(true)
-   // WhatsApp notify you
-   const msg=`NEW ORDER ${payMethod.toUpperCase()}%0AProduct: ${p.name} $${p.price}%0ACust: ${cust.name} ${cust.phone}%0AAddr: ${cust.address}%0APay: ${payMethod} Txn: ${txnId} From: ${senderNum}`
-   window.open(`https://wa.me/17163282102?text=${msg}`,"_blank")
-  }catch(e:any){ alert(e.message) }
-}
+  const handleOrderAndPay = async () => {
+    setLoading(true)
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: product.name,
+        price: orderTotal, // final total
+        image: product.image,
+        quantity: product.qty,
+      })
+    })
+    const data = await res.json()
+    if(data.url) window.location.href = data.url
+    else { alert('Error'); setLoading(false) }
+  }
 
-if(done){
-  return(
-   <div className="min-h-screen bg-white flex items-center justify-center p-6 text-black">
-    <div className="text-center max-w-md border-2 border-green-500 rounded-xl p-6 bg-green-50">
-     <div className="text-5xl">✅</div>
-     <h1 className="text-2xl font-black mt-3">Order Placed!</h1>
-     <p className="mt-2 text-sm">ID: {orderId.slice(0,8)} - {p?.name} - ${p?.price}</p>
-     {payMethod!=="cod"? (
-      <div className="bg-yellow-100 p-3 rounded mt-3 text-sm text-left">
-       <b>We received your payment!</b><br/>
-       Method: {payMethod.toUpperCase()}<br/>
-       Txn ID: {txnId}<br/>
-       We will verify in 5 mins and confirm your order!
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-[600px] mx-auto bg-white p-4 pb-24">
+
+        {/* Address */}
+        <div className="flex items-start gap-2 border-b pb-3">
+          <div className="w-3 h-3 bg-black rounded-full mt-1"></div>
+          <div className="flex-1">
+            <p className="font-bold">Bellal Hossain <span className="font-normal text-gray-600">+1 (516) 272-1370</span></p>
+            <p className="text-orange-600 text-sm">288 Logan St, Last floor, BROOKLYN, NY 11208-2510, Uni...</p>
+          </div>
+        </div>
+
+        {/* Product */}
+        <div className="flex gap-3 py-3 border-b">
+          <img src={product.image} alt="" className="w-20 h-20 object-cover rounded" />
+          <div className="flex-1">
+            <p className="font-bold">${subtotal.toFixed(2)} <span className="line-through text-gray-400 font-normal">${itemTotal.toFixed(2)}</span> <span className="bg-red-500 text-white text-xs px-2 py-1 rounded ml-1">16% OFF</span></p>
+            <p className="text-green-700 text-sm mt-1">🚚 Standard shipping: <b>${shipping}</b>, delivery: 3-7 business days, fastest delivery in 3 business days ›</p>
+          </div>
+          <div className="text-sm">1 ⌄</div>
+        </div>
+
+        {/* Payment Methods */}
+        <div className="py-4 border-b">
+          <h3 className="font-bold text-lg mb-3">Payment methods</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center"><div className="w-3 h-3 bg-white rounded-full"></div></div>
+              <div className="bg-[#009CDE] text-[#003087] font-bold px-2 py-1 text-sm rounded">PayPal</div>
+              <span>PayPal s***5@gmail.com</span>
+            </div>
+            <span className="text-gray-500 text-sm">Edit</span>
+          </div>
+          <div className="flex gap-1 mt-3 flex-wrap items-center">
+            <span className="border px-2 py-1 rounded text-xs">Pay</span>
+            <span className="border px-2 py-1 rounded text-xs bg-red-500 text-white">●●</span>
+            <span className="border px-2 py-1 rounded text-xs bg-[#009CDE] text-white">PayPal</span>
+            <span className="border px-2 py-1 rounded text-xs bg-green-500 text-white">$</span>
+            <span className="border px-2 py-1 rounded text-xs">Klarna</span>
+            <span className="border px-2 py-1 rounded text-xs bg-black text-white">zip</span>
+            <span className="border px-2 py-1 rounded text-xs bg-blue-600 text-white">affirm</span>
+            <span className="text-sm ml-2">View all ⌄</span>
+          </div>
+        </div>
+
+        {/* Totals */}
+        <div className="py-3 space-y-2">
+          <div className="flex justify-between"><span>Item(s) total:</span><span>${itemTotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Item(s) discount:</span><span className="text-red-500">-${discount.toFixed(2)}</span></div>
+
+          <div className="flex justify-between items-center py-2 border-t cursor-pointer" onClick={()=>setShowCoupon(!showCoupon)}>
+            <span>Apply coupon code</span><span>›</span>
+          </div>
+          {showCoupon && (
+            <div className="flex gap-2">
+              <input value={coupon} onChange={e=>setCoupon(e.target.value)} placeholder="Enter SAVE10" className="border p-2 flex-1 rounded" />
+              <button onClick={applyCoupon} className="bg-black text-white px-4 rounded">Apply</button>
+            </div>
+          )}
+
+          <div className="flex justify-between pt-2 border-t"><span>Subtotal:</span><span>${subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Shipping:</span><span>${shipping.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Sales tax:</span><span>${tax.toFixed(2)}</span></div>
+          <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Order total:</span><span className="text-green-700">${orderTotal.toFixed(2)}</span></div>
+        </div>
+
+        {/* Guarantee */}
+        <div className="border-2 border-green-600 rounded-lg p-3 text-green-700 mt-2">
+          $ Submit your order now to enjoy our Price Match Guarantee.
+        </div>
       </div>
-     ) : (
-      <p className="mt-2 text-sm">COD - Pay when receive</p>
-     )}
-     <a href="/" className="inline-block mt-5 bg-black text-yellow-400 font-black px-8 py-3 rounded-full">Continue Shopping</a>
-     <div className="mt-4 text-xs text-gray-500">Shipping partner: <a href="https://www.pathao.com" target="_blank" className="underline">Pathao / Steadfast link</a> - You will book after verification</div>
+
+      {/* Bottom Fixed Bar - Like your photo */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-between items-center max-w-[600px] mx-auto">
+        <div>
+          <p className="font-bold text-xl">${orderTotal.toFixed(2)} <span className="text-sm">^</span></p>
+          <p className="text-orange-600 text-sm">Saved ${discount.toFixed(2)}</p>
+        </div>
+        <button
+          onClick={handleOrderAndPay}
+          disabled={loading}
+          className="bg-[#FF6A00] text-white px-8 py-3 rounded-full font-bold text-lg"
+        >
+          {loading? 'Processing...' : `Order and Pay (1)`}
+        </button>
+      </div>
     </div>
-   </div>
   )
-}
-
-if(!p) return <div className="p-10 text-center">Loading...</div>
-
-return(
-  <div className="min-h-screen bg-gray-100 text-black">
-   <div className="bg-black text-yellow-400 p-3 font-black"><a href="/" className="text-yellow-400">{"<- Back"} </a> JHUMMKA - Secure Checkout</div>
-   <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6 p-4">
-    <div className="bg-white rounded-xl p-4 shadow">
-     <img src={p.image} className="w-full h-[350px] object-cover rounded-lg"/>
-     <div className="font-black text-xl mt-3">{p.name}</div>
-     <div className="text-gray-500 text-sm">{p.category} - Stock: Available</div>
-     <div className="text-3xl font-black mt-2">${p.price}</div>
-     <div className="text-xs text-gray-500 mt-2">After customer pay, you pay shopkeeper + shipping. Your profit = Customer Price - Shopkeeper Price - Shipping</div>
-    </div>
-    <div className="bg-white rounded-xl p-5 shadow h-fit">
-     <h2 className="font-black text-lg mb-3">1. Delivery Details</h2>
-     <input value={cust.name} onChange={e=>setCust({...cust,name:e.target.value})} placeholder="Full Name" className="w-full border-2 p-3 rounded-lg mb-2"/>
-     <input value={cust.phone} onChange={e=>setCust({...cust,phone:e.target.value})} placeholder="Phone" className="w-full border-2 p-3 rounded-lg mb-2"/>
-     <textarea value={cust.address} onChange={e=>setCust({...cust,address:e.target.value})} placeholder="Full Address" className="w-full border-2 p-3 rounded-lg mb-4 min-h-[80px]"/>
-
-     <h2 className="font-black text-lg mb-3">2. Pay Options - Pay to Us</h2>
-     <div className="grid grid-cols-2 gap-2 mb-3">
-      <button onClick={()=>setPayMethod("cod")} className={`p-3 rounded-lg border-2 font-bold text-sm ${payMethod==="cod"?"bg-black text-yellow-400 border-black":"bg-white"}`}>Cash on Delivery</button>
-      <button onClick={()=>setPayMethod("bkash")} className={`p-3 rounded-lg border-2 font-bold text-sm ${payMethod==="bkash"?"bg-pink-600 text-white border-pink-600":"bg-white"}`}>bKash</button>
-      <button onClick={()=>setPayMethod("nagad")} className={`p-3 rounded-lg border-2 font-bold text-sm ${payMethod==="nagad"?"bg-orange-600 text-white border-orange-600":"bg-white"}`}>Nagad</button>
-      <button onClick={()=>setPayMethod("bank")} className={`p-3 rounded-lg border-2 font-bold text-sm ${payMethod==="bank"?"bg-blue-600 text-white border-blue-600":"bg-white"}`}>Bank Transfer</button>
-     </div>
-
-     {payMethod!=="cod" && (
-      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3 mb-3 text-sm">
-       <b>Pay to our Business Account:</b><br/>
-       {payMethod==="bkash" && <><span className="font-black text-pink-600">{MY_BKASH}</span><br/>Send Money: ${p.price}<br/>Reference: {p.name.slice(0,10)}</>}
-       {payMethod==="nagad" && <><span className="font-black text-orange-600">{MY_NAGAD}</span><br/>Send: ${p.price}</>}
-       {payMethod==="bank" && <><span className="font-black text-blue-600">{MY_BANK}</span><br/>Amount: ${p.price}</>}
-       <div className="mt-3">
-        <input value={senderNum} onChange={e=>setSenderNum(e.target.value)} placeholder="Your bKash/Nagad Number (Sender)" className="w-full border p-2 rounded mb-2"/>
-        <input value={txnId} onChange={e=>setTxnId(e.target.value)} placeholder="Transaction ID - TrxID" className="w-full border-2 border-green-500 p-2 rounded font-bold"/>
-        <div className="text-xs text-gray-500 mt-1">After sending money, enter Transaction ID here</div>
-       </div>
-      </div>
-     )}
-
-     <h2 className="font-black text-lg mb-2">3. Shipping</h2>
-     <div className="text-xs bg-gray-50 p-2 rounded mb-3">
-      For you (admin): After verifying payment, pay shopkeeper, then book shipping:<br/>
-      - Pathao: <a href="https://merchant.pathao.com" className="underline text-blue-600">merchant.pathao.com</a><br/>
-      - Steadfast: <a href="https://steadfast.com.bd" className="underline text-blue-600">steadfast.com.bd</a><br/>
-      - Paperfly etc. Cost $2-3 will cut from your profit.
-     </div>
-
-     <button onClick={placeOrder} className="bg-yellow-400 text-black font-black w-full py-4 rounded-full text-lg">
-      {payMethod==="cod"? "PLACE ORDER - COD" : `CONFIRM - PAID ${txnId? "✓" : ""}`}
-     </button>
-    </div>
-   </div>
-  </div>
-)
-}
-export default function Checkout(){return <Suspense><CheckoutContent/></Suspense>} 
+} 

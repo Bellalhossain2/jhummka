@@ -1,26 +1,41 @@
 "use client"
-import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
-
-export const dynamic = "force-dynamic"
+import { useState, Suspense } from "react"
 
 function Inner() {
   const sp = useSearchParams()
-  const name = sp.get("name") || "Mobile Stand"
-  const price = Number(sp.get("price") || "9.94")
+  const name = sp.get("name") || "Jhumka"
+  const price = Number(sp.get("price") || "20")
   const [load, setLoad] = useState(false)
-  const total = 12.41
+ 
+  const shipping = 2.99
+  const tax = price * 0.08
+  const discount = 1.54
+  const total = Number((price + shipping + tax - discount).toFixed(2))
 
   const pay = async () => {
     setLoad(true)
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, price: total }),
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
-    else { alert("error"); setLoad(false) }
+    try {
+      // Try both API routes
+      let res = await fetch("/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, price: total, productName: name }),
+      })
+      // Fallback if first fails
+      if (!res.ok) {
+        res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, price: total }),
+        })
+      }
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else { alert("Stripe error: " + JSON.stringify(data)); setLoad(false) }
+    } catch(e:any) {
+      alert("Error: " + e.message); setLoad(false)
+    }
   }
 
   return (
@@ -33,10 +48,10 @@ function Inner() {
       <p style={{ color: "#000" }}>Item total: ${price}</p>
       <p style={{ color: "red" }}>Discount: -$1.54</p>
       <p style={{ color: "#000" }}>Shipping: $2.99</p>
-      <p style={{ color: "#000" }}>Tax: $1.02</p>
+      <p style={{ color: "#000" }}>Tax: ${tax.toFixed(2)}</p>
       <h2 style={{ color: "green", fontWeight: 700 }}>Order total: ${total}</h2>
-      <button onClick={pay} style={{ background: "#FF6A00", color: "#fff", padding: "14px 30px", borderRadius: 30, border: "none", fontWeight: 700, marginTop: 20, width: "100%" }}>
-        {load ? "Loading..." : "Order and Pay (1)"}
+      <button onClick={pay} style={{ background: "#FF6A00", color: "#fff", padding: "14px 30px", borderRadius: 30, border: "none", fontWeight: 700, marginTop: 20, cursor: "pointer", width: "100%" }}>
+        {load ? "Loading..." : `Order and Pay - $${total}`}
       </button>
     </div>
   )

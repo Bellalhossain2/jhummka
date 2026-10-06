@@ -22,7 +22,9 @@ const filtered = products.filter(p=>{
   return matchCat && matchSearch
 })
 function buy(p:any){
-  window.location.href=`/checkout?id=${p.id}`
+  const name = encodeURIComponent(p.name || p.title || "jhummka")
+  const price = p.price || 20
+  window.location.href=/checkout?name=${name}&price=${price}&id=${p.id}`
 }
 return(
   <div className="min-h-screen bg-white text-black">

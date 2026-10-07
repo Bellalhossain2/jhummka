@@ -1,46 +1,36 @@
 "use client"
 import { useState } from "react"
 
-const products = [
-  { id: 1, name: "Golden Jhumka", title: "Golden Jhumka", price: 25, cat: "Gold" },
-  { id: 2, name: "Silver Jhumka", title: "Silver Jhumka", price: 22, cat: "Silver" },
-  { id: 3, name: "Bridal Jhumka", title: "Bridal Jhumka", price: 45, cat: "Bridal" },
-  { id: 4, name: "Oxidised Jhumka", title: "Oxidised Jhumka", price: 20, cat: "Oxidised" },
+const allProducts = [
+  { id: 1, name: "Temple Gold Jhumka", price: 25, cat: "jewelry", img: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=400", rating: 4.8, sold: "2k+ sold" },
+  { id: 2, name: "DOVE Soap 4-Pack", price: 13, cat: "beauty", img: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=400", rating: 4.5, sold: "5k+ sold" },
+  { id: 3, name: "AXE Perfume Fresh", price: 8, cat: "fashion", img: "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400", rating: 4.6, sold: "1k+ sold" },
+  { id: 4, name: "Mobile Stand Holder", price: 10, cat: "electronics", img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400", rating: 4.3, sold: "3k+ sold" },
+  { id: 5, name: "Power Bank 20000mAh", price: 89, cat: "electronics", img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400", rating: 4.7, sold: "800 sold" },
+  { id: 6, name: "Hair Cutter USB", price: 18, cat: "barber", img: "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400", rating: 4.4, sold: "1.2k sold" },
+  { id: 7, name: "Hillside Honda Keychain", price: 5, cat: "fashion", img: "https://images.unsplash.com/photo-1611923134232-9d6b0bb0f0e1?w=400", rating: 4.9, sold: "10k+ sold" },
+  { id: 8, name: "Kids Toy Car", price: 12, cat: "toys", img: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400", rating: 4.6, sold: "4k sold" },
+  { id: 9, name: "Bridal Heavy Jhumka", price: 45, cat: "jhumkas", img: "https://images.unsplash.com/photo-1601821765780-754fa98637c1?w=400", rating: 5.0, sold: "900 sold" },
+  { id: 10, name: "Home LED Light", price: 15, cat: "home", img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400", rating: 4.2, sold: "2k sold" },
 ]
 
-export default function Home() {
-  const [filter, setFilter] = useState("All")
+const cats = ["ALL","JHUMKAS","ELECTRONICS","JEWELRY","KIDS","HOME","HOUSEHOLD","DRESS","COSMETICS","TOYS","FASHION","BARBER","MEN","BEAUTY","BOOKS","GROCERY","KITCHEN"]
+
+export default function AmazonStore(){
+  const [filter,setFilter]=useState("ALL")
+  const [search,setSearch]=useState("")
 
   function buy(p:any){
-    const name = encodeURIComponent(p.name || p.title || "Jhumka")
-    const price = p.price || 20
-    window.location.href='/checkout?name='+name+'&price='+price+'&id='+p.id
+    const name=encodeURIComponent(p.name)
+    window.location.href='/checkout?name='+name+'&price='+p.price+'&id='+p.id
   }
 
-  const cats = ["All", "Gold", "Silver", "Bridal", "Oxidised"]
-  const filtered = filter==="All" ? products : products.filter(x=>x.cat===filter)
+  const filtered = allProducts.filter(p=>{
+    const matchCat = filter==="ALL" || p.cat.toLowerCase()===filter.toLowerCase() || (filter==="JEWELRY" && p.cat==="jhumkas")
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
+  })
 
   return(
-    <div className="min-h-screen bg-white text-black">
-      <div className="p-6 text-center">
-        <h1 className="text-3xl font-bold">JhummkaTok</h1>
-        <div className="flex gap-2 mt-3 overflow-x-auto pb-1 justify-center">
-          {cats.map((c)=>
-            <button key={c} onClick={()=>setFilter(c)} className={'px-3 py-1 rounded-full text-xs font-bold '+(filter===c?'bg-black text-white':'bg-gray-200')}>
-              {c}
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          {filtered.map((p)=>
-            <div key={p.id} className="border p-3 rounded">
-              <div className="font-bold">{p.name}</div>
-              <div>${p.price}</div>
-              <button onClick={()=>buy(p)} className="mt-2 bg-black text-white px-3 py-1 rounded w-full">Buy Now</button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-} 
+    <div className="min-h-screen bg-[#f5f5f5]">
+      {/* AMAZON HEADER */}

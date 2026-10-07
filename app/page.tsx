@@ -1,75 +1,69 @@
 "use client"
 import { useState, useEffect } from "react"
+import { db } from "@/lib/firebase"
+import { collection, getDocs, query, orderBy } from "firebase/firestore"
 
-export default function AdminPage(){
-  const [name,setName]=useState("")
-  const [price,setPrice]=useState("")
-  const [category,setCategory]=useState("jewelry")
-  const [msg,setMsg]=useState("")
-  const [list,setList]=useState<any[]>([])
+const CATS=["ALL","JHUMKAS","JEWELRY","ELECTRONICS","BEAUTY","FASHION","BARBER","TOYS","HOME","HOUSEHOLD","DRESS","COSMETICS","OFFICE","PETS","MUSICAL","FOOD","BOOKS","KITCHEN","HEALTH","AUTOMOTIVE","GROCERY","KIDS","MEN","WOMEN","BAGS"]
+
+export default function ShopPage(){
+  const [products,setProducts]=useState<any[]>([])
+  const [filter,setFilter]=useState("ALL")
+  const [q,setQ]=useState("")
+  const [loading,setLoading]=useState(true)
 
   useEffect(()=>{
-    const saved=localStorage.getItem("jhummka_products")
-    if(saved) setList(JSON.parse(saved))
+    const load=async()=>{
+      try{
+        const qq=query(collection(db,"products"),orderBy("createdAt","desc"))
+        const snap=await getDocs(qq)
+        const data=snap.docs.map(d=>({id:d.id,...d.data() as any}))
+        setProducts(data)
+      }catch(e){console.log(e)}
+      setLoading(false)
+    }
+    load()
   },[])
 
-  function add(){
-    if(!name||!price) {setMsg("Enter name & price"); return}
-    const newP={name,price:Number(price),cat:category,img:"https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=400",sold:"New"}
-    const updated=[newP,...list]
-    setList(updated)
-    localStorage.setItem("jhummka_products",JSON.stringify(updated))
-    // Also save for main page
-    const all=localStorage.getItem("admin_products")
-    const arr=all?JSON.parse(all):[]
-    localStorage.setItem("admin_products",JSON.stringify([...arr,newP]))
-    setMsg("✅ Added! Now shows on shop!")
-    setName(""); setPrice("")
+  function buy(p:any){
+    const url=`/checkout?name=${encodeURIComponent(p.name)}&price=${p.price}&id=${p.id}&img=${encodeURIComponent(p.image||"")}`
+    window.location.href=url
   }
 
-  function clearAll(){
-    localStorage.removeItem("jhummka_products")
-    localStorage.removeItem("admin_products")
-    setList([]); setMsg("Cleared")
-  }
+  const filtered=products.filter(p=>{
+    const c=(p.category||"").toLowerCase()
+    const f=filter.toLowerCase()
+    const matchCat=filter==="ALL"||c===f||(f==="jhumkas"&&(c==="jhumkas"||c==="jewelry"))||(f==="jewelry"&&(c==="jewelry"||c==="jhumkas"))
+    const matchQ=p.name.toLowerCase().includes(q.toLowerCase())
+    return matchCat&&matchQ
+  })
 
   return(
-    <div style={{padding:20,maxWidth:700,margin:"0 auto",background:"#fff",minHeight:"100vh",color:"#000"}}>
-      <h1 style={{fontWeight:"bold",fontSize:24}}>JHUMMKA Admin v4 FIXED</h1>
-      <p style={{color:"green"}}>{msg}</p>
-      <div style={{border:"2px solid #000",padding:20,marginTop:15}}>
-        <label>Product Name:</label>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Temple Gold Jhumka" style={{width:"100%",padding:10,border:"1px solid #999",marginBottom:10}}/>
-        <label>Price in USD:</label>
-        <input value={price} onChange={e=>setPrice(e.target.value)} type="number" placeholder="1200" style={{width:"100%",padding:10,border:"1px solid #999",marginBottom:10}}/>
-        <label>Category:</label>
-        <select value={category} onChange={e=>setCategory(e.target.value)} style={{width:"100%",padding:10,border:"1px solid #999",marginBottom:10}}>
-          <option value="electronics">electronics</option>
-          <option value="jewelry">jewelry</option>
-          <option value="beauty">beauty</option>
-          <option value="fashion">fashion</option>
-          <option value="toys">toys</option>
-          <option value="home">home</option>
-          <option value="barber">barber</option>
-          <option value="kids">kids</option>
-          <option value="household">household</option>
-          <option value="bags">bags</option>
-          <option value="sports">sports</option>
-          <option value="men">men</option>
-          <option value="women">women</option>
-          <option value="grocery">grocery</option>
-          <option value="kitchen">kitchen</option>
-          <option value="books">books</option>
-        </select>
-        <button onClick={add} style={{background:"#ffbf00",padding:12,width:"100%",fontWeight:"bold",marginTop:10}}>Add Product</button>
-        <button onClick={clearAll} style={{background:"#000",color:"#fff",padding:8,width:"100%",marginTop:10}}>Clear All Custom</button>
+    <div className="min-h-screen bg-[#f2f2f2]">
+      <div className="bg-[#131921] text-white p-2 sticky top-0 z-20 flex gap-2 items-center">
+        <div className="font-black text-lg">jhummka<span className="text-[#febd69]">Tok</span></div>
+        <div className="flex-1 flex bg-white rounded overflow-hidden">
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search JhummkaTok - all items" className="flex-1 px-3 py-2 text-black text-sm outline-none"/>
+          <button className="bg-[#febd69] px-4 text-black font-bold">🔍</button>
+        </div>
       </div>
 
-      <h3 style={{marginTop:20,fontWeight:"bold"}}>Your Products ({list.length}):</h3>
-      {list.map((p,i)=><div key={i} style={{border:"1px solid #ddd",padding:8,marginTop:5}}>{p.name} - ${p.price} - {p.cat}</div>)}
-      <div style={{marginTop:20}}>
-        <a href="/" style={{background:"black",color:"white",padding:10}}>Go to Shop</a>
+      <div className="bg-gradient-to-r from-[#ff6a00] to-[#ffbf00] text-black text-center py-1.5 text-xs font-bold">🎉 FREE SHIPPING $20+ | ⚡ Temu Style Flash -80% OFF | {products.length} Products Live</div>
+
+      <div className="bg-white border-b p-2 flex gap-2 overflow-auto whitespace-nowrap sticky top-[48px] z-10">
+        {CATS.map(c=><button key={c} onClick={()=>setFilter(c)} className={`px-3 py-1 rounded-full text-[11px] font-bold border ${filter===c?'bg-black text-white border-black':'bg-[#ffbf00] border-[#ffbf00] text-black'}`}>{c}</button>)}
       </div>
-    </div>
-  )
-} 
+
+      {loading?<div className="p-10 text-center">Loading products from Admin...</div>:
+      <div className="max-w-[1400px] mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 p-2">
+        {filtered.length===0?<div className="col-span-5 p-10 text-center bg-white rounded">No products in {filter}. Add in /admin</div>:
+        filtered.map((p)=>
+          <div key={p.id} className="bg-white rounded-lg border hover:shadow-lg overflow-hidden">
+            <div className="h-[160px] bg-[#f5e6ff] relative">
+              <img src={p.image} alt={p.name} className="w-full h-full object-cover"/>
+              <div className="absolute top-1 left-1 bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">-42%</div>
+              <div className="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs">♡</div>
+              <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[8px] px-1 rounded">{p.category}</div>
+            </div>
+            <div className="p-2">
+              <div className="text-[12px] line-clamp-2 h-[30px] leading-tight">{p.name}</div>
+              <div className="text-[11px] text-[#ff8 

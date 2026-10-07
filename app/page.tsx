@@ -24,7 +24,7 @@ const filtered = products.filter(p=>{
 function buy(p:any){
   const name = encodeURIComponent(p.name || p.title || "jhummka")
   const price = p.price || 20
-  window.location.href='/checkout?name='+name+'&price='+price+&id='+p.id`
+  window.location.href='/checkout?name='+name+'&price='+price+'&id='+p.id`
 }
 return(
   <div className="min-h-screen bg-white text-black">

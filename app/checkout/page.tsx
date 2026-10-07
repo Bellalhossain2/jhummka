@@ -20,7 +20,25 @@ function CheckoutContent(){
   async function pay(){
     if(!firstName || !card || !exp || !cvc){ alert("Fill all fields"); return }
     setLoading(true)
-    setTimeout(()=>{ setDone(true); setLoading(false) },1000)
+    try{
+      const res = await fatch("/api/create-payment-intent",{
+        method:"POST",
+        headers:{"content-type":application"/json"],
+        body:JSON.stringify({ name,price })
+    })
+    const data = await res.json()
+    if(data.url){
+      window.location.href = data.url// GO TO REAL STRIPE PAGE
+    } else {
+      alert("stripe error: " + data.error)
+      setloading(false)
+    }
+  } catch(e){
+    alert("Failed")
+   setLoading(false)
+  }
+}
+                 
   }
 
   if(done){

@@ -1,8 +1,8 @@
 "use client"
 import { useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 
-export default function CheckoutPage(){
+function CheckoutContent(){
   const params = useSearchParams()
   const name = params.get("name") || "Product"
   const price = params.get("price") || "2"
@@ -49,5 +49,13 @@ export default function CheckoutPage(){
         {loading ? "Loading..." : "DONE - Pay $" + price}
       </button>
     </div>
+  )
+}
+
+export default function CheckoutPage(){
+  return (
+    <Suspense fallback={<div className="p-6">Loading checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   )
 } 

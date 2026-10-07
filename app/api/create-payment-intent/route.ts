@@ -7,13 +7,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { amount } = await req.json()
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
-      currency: 'usd',
-      automatic_payment_methods: { enabled: true },
+    const { name, price } = await req.json()
+    const amount = Math.round(Number(price) * 100)
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: name || 'Jhummka Product' },
+          unit_amount: amount,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: 'https://jhummkatok.com/success',
+      cancel_url: 'https://jhummkatok.com/checkout',
     })
-    return NextResponse.json({ clientSecret: paymentIntent.client_secret })
+
+    return NextResponse.json({ url: session.url })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

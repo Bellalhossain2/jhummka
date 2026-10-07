@@ -1,47 +1,75 @@
 "use client"
-import { useState } from "react"
-const products=[
-{name:"Gold Jhumka",price:25,cat:"jewelry",img:"https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=400",sold:"2k+ sold"},
-{name:"DOVE Soap 4-Pack",price:13,cat:"beauty",img:"https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=400",sold:"5k+ sold"},
-{name:"AXE Perfume",price:8,cat:"fashion",img:"https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400",sold:"1k+ sold"},
-{name:"Mobile Stand",price:10,cat:"electronics",img:"https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400",sold:"3k+ sold"},
-{name:"Power Bank",price:89,cat:"electronics",img:"https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400",sold:"800 sold"},
-{name:"Hair Cutter",price:18,cat:"barber",img:"https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400",sold:"1.2k sold"},
-{name:"Bridal Jhumka",price:45,cat:"jewelry",img:"https://images.unsplash.com/photo-1601821765780-754fa98637c1?w=400",sold:"900 sold"},
-{name:"Toy Car",price:12,cat:"toys",img:"https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400",sold:"4k sold"},
-]
-const cats=["ALL","JEWELRY","ELECTRONICS","BEAUTY","FASHION","BARBER","TOYS","HOME"]
-export default function Page(){
-const [filter,setFilter]=useState("ALL")
-const [q,setQ]=useState("")
-function buy(p:any){
-window.location.href='/checkout?name='+encodeURIComponent(p.name)+'&price='+p.price
-}
-const list=products.filter(p=>{
-const mCat=filter==="ALL"||p.cat===filter.toLowerCase()||(filter==="JEWELRY"&&p.name.includes("Jhumka"))
-const mQ=p.name.toLowerCase().includes(q.toLowerCase())
-return mCat&&mQ
-})
-return(
-<div className="min-h-screen bg-[#f5f5f5]">
-<div className="bg-[#131921] text-white p-2 sticky top-0 z-20 flex items-center gap-2">
-<div className="font-black">jhummka<span className="text-[#febd69]">Tok</span></div>
-<div className="flex-1 flex bg-white rounded overflow-hidden"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search JhummkaTok" className="flex-1 px-2 py-1.5 text-black text-sm outline-none"/><button className="bg-[#febd69] px-3 text-black">🔍</button></div>
-</div>
-<div className="bg-[#ffbf00] text-center text-[11px] font-bold py-1">FREE SHIPPING $20+ | Flash Deals -80% OFF</div>
-<div className="bg-white p-2 flex gap-2 overflow-auto border-b sticky top-[40px] z-10">
-{cats.map(c=><button key={c} onClick={()=>setFilter(c)} className={`px-3 py-1 rounded-full text-[11px] font-bold border ${filter===c?'bg-black text-white':'bg-[#ffbf00] text-black'}`}>{c}</button>)}
-</div>
-<div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-2 max-w-[1400px] mx-auto">
-{list.map((p,i)=><div key={i} className="bg-white rounded border p-2">
-<div className="h-[120px] bg-gray-100 overflow-hidden rounded"><img src={p.img} className="w-full h-full object-cover"/></div>
-<div className="text-[12px] mt-1 h-[28px]">{p.name}</div>
-<div className="text-[11px] text-orange-500">★★★★★ <span className="text-gray-400">{p.sold}</span></div>
-<div className="font-black">${p.price} <span className="text-gray-400 line-through text-[10px]">${(p.price*1.8).toFixed(0)}</span></div>
-<div className="text-[9px] text-green-600 font-bold">✓ Free Shipping</div>
-<button onClick={()=>buy(p)} className="w-full mt-2 bg-[#ffbf00] py-1.5 rounded-full text-xs font-black">Buy Now</button>
-</div>)}
-</div>
-</div>
-)
+import { useState, useEffect } from "react"
+
+export default function AdminPage(){
+  const [name,setName]=useState("")
+  const [price,setPrice]=useState("")
+  const [category,setCategory]=useState("jewelry")
+  const [msg,setMsg]=useState("")
+  const [list,setList]=useState<any[]>([])
+
+  useEffect(()=>{
+    const saved=localStorage.getItem("jhummka_products")
+    if(saved) setList(JSON.parse(saved))
+  },[])
+
+  function add(){
+    if(!name||!price) {setMsg("Enter name & price"); return}
+    const newP={name,price:Number(price),cat:category,img:"https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=400",sold:"New"}
+    const updated=[newP,...list]
+    setList(updated)
+    localStorage.setItem("jhummka_products",JSON.stringify(updated))
+    // Also save for main page
+    const all=localStorage.getItem("admin_products")
+    const arr=all?JSON.parse(all):[]
+    localStorage.setItem("admin_products",JSON.stringify([...arr,newP]))
+    setMsg("✅ Added! Now shows on shop!")
+    setName(""); setPrice("")
+  }
+
+  function clearAll(){
+    localStorage.removeItem("jhummka_products")
+    localStorage.removeItem("admin_products")
+    setList([]); setMsg("Cleared")
+  }
+
+  return(
+    <div style={{padding:20,maxWidth:700,margin:"0 auto",background:"#fff",minHeight:"100vh",color:"#000"}}>
+      <h1 style={{fontWeight:"bold",fontSize:24}}>JHUMMKA Admin v4 FIXED</h1>
+      <p style={{color:"green"}}>{msg}</p>
+      <div style={{border:"2px solid #000",padding:20,marginTop:15}}>
+        <label>Product Name:</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Temple Gold Jhumka" style={{width:"100%",padding:10,border:"1px solid #999",marginBottom:10}}/>
+        <label>Price in USD:</label>
+        <input value={price} onChange={e=>setPrice(e.target.value)} type="number" placeholder="1200" style={{width:"100%",padding:10,border:"1px solid #999",marginBottom:10}}/>
+        <label>Category:</label>
+        <select value={category} onChange={e=>setCategory(e.target.value)} style={{width:"100%",padding:10,border:"1px solid #999",marginBottom:10}}>
+          <option value="electronics">electronics</option>
+          <option value="jewelry">jewelry</option>
+          <option value="beauty">beauty</option>
+          <option value="fashion">fashion</option>
+          <option value="toys">toys</option>
+          <option value="home">home</option>
+          <option value="barber">barber</option>
+          <option value="kids">kids</option>
+          <option value="household">household</option>
+          <option value="bags">bags</option>
+          <option value="sports">sports</option>
+          <option value="men">men</option>
+          <option value="women">women</option>
+          <option value="grocery">grocery</option>
+          <option value="kitchen">kitchen</option>
+          <option value="books">books</option>
+        </select>
+        <button onClick={add} style={{background:"#ffbf00",padding:12,width:"100%",fontWeight:"bold",marginTop:10}}>Add Product</button>
+        <button onClick={clearAll} style={{background:"#000",color:"#fff",padding:8,width:"100%",marginTop:10}}>Clear All Custom</button>
+      </div>
+
+      <h3 style={{marginTop:20,fontWeight:"bold"}}>Your Products ({list.length}):</h3>
+      {list.map((p,i)=><div key={i} style={{border:"1px solid #ddd",padding:8,marginTop:5}}>{p.name} - ${p.price} - {p.cat}</div>)}
+      <div style={{marginTop:20}}>
+        <a href="/" style={{background:"black",color:"white",padding:10}}>Go to Shop</a>
+      </div>
+    </div>
+  )
 } 

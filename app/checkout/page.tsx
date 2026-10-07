@@ -21,9 +21,9 @@ function CheckoutContent(){
     if(!firstName || !card || !exp || !cvc){ alert("Fill all fields"); return }
     setLoading(true)
     try{
-      const res = await fatch("/api/create-payment-intent",{
+      const res = await fetch("/api/create-payment-intent",{
         method:"POST",
-        headers:{"content-type":application"/json"],
+        headers:{"content-type":application/json"],
         body:JSON.stringify({ name,price })
     })
     const data = await res.json()

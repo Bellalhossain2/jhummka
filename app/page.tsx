@@ -10,6 +10,7 @@ export default function ShopPage(){
   const [filter,setFilter]=useState("ALL")
   const [search,setSearch]=useState("")
   const [loading,setLoading]=useState(true)
+  const [buyingId,setBuyingId]=useState<string|null>(null)
 
   useEffect(()=>{
     const load=async()=>{
@@ -23,8 +24,26 @@ export default function ShopPage(){
     load()
   },[])
 
-  function buy(p:any){
-    window.location.href=`/checkout?name=${encodeURIComponent(p.name)}&price=${p.price}&id=${p.id}`
+  // NEW: Direct to Stripe with REAL price - no middle page!
+  async function buy(p:any){
+    setBuyingId(p.id)
+    try{
+      const res = await fetch("/api/create-payment-intent",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ items:[{ name:p.name, price:Number(p.price), quantity:1 }] })
+      })
+      const data = await res.json()
+      if(data.url){
+        window.location.href = data.url
+      } else {
+        alert("Stripe error: "+data.error)
+        setBuyingId(null)
+      }
+    }catch(e){
+      alert("Failed to checkout")
+      setBuyingId(null)
+    }
   }
 
   const filtered=products.filter(p=>{
@@ -35,40 +54,46 @@ export default function ShopPage(){
     return matchCat&&matchQ
   })
 
-  return(
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-black text-white p-2 sticky top-0 z-20 flex gap-2 items-center">
-        <div className="font-black text-lg">jhummka<span className="text-yellow-400">Tok</span></div>
-        <div className="flex-1 flex bg-white rounded overflow-hidden">
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search JhummkaTok" className="flex-1 px-3 py-2 text-black text-sm outline-none"/>
-          <button className="bg-yellow-400 px-4 text-black font-bold">Search</button>
-        </div>
+  if(loading) return <div style={{padding:50,textAlign:"center"}}>Loading...</div>
+
+  return (
+    <div style={{background:"#fff",minHeight:"100vh"}}>
+      {/* Categories */}
+      <div style={{background:"#FFC107",padding:"10px",display:"flex",gap:"8px",overflowX:"auto",whiteSpace:"nowrap",position:"sticky",top:0,zIndex:10}}>
+        {CATS.map(cat=>(
+          <button key={cat} onClick={()=>setFilter(cat)} style={{padding:"6px 14px",borderRadius:"20px",border:"none",background:filter===cat?"#000":"#fff",color:filter===cat?"#fff":"#000",fontWeight:"bold",fontSize:"12px",cursor:"pointer"}}>{cat}</button>
+        ))}
       </div>
 
-      <div className="bg-yellow-400 text-black text-center py-1.5 text-xs font-bold">FREE SHIPPING $20+ | Flash Deals 80% OFF | {products.length} Live Products</div>
+      <div style={{padding:"10px",background:"#f5f5f5",textAlign:"center",fontSize:"12px"}}>FREE SHIPPING $20+ | Flash Deals 80% OFF | {filtered.length} Live Products</div>
 
-      <div className="bg-white border-b p-2 flex gap-2 overflow-auto whitespace-nowrap sticky top-12 z-10">
-        {CATS.map(c=><button key={c} onClick={()=>setFilter(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${filter===c?'bg-black text-white':'bg-yellow-400 text-black'}`}>{c}</button>)}
+      {/* Product Grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:"10px",padding:"10px",maxWidth:"1400px",margin:"0 auto"}}>
+        {filtered.map((p:any)=>{
+          const salePrice = Number(p.price)
+          const originalPrice = (salePrice / 0.58).toFixed(1) // FIXED: no more 151.299999...
+          const totalWithShipping = (salePrice + 25).toFixed(0)
+          return (
+            <div key={p.id} style={{background:"#fff",borderRadius:"8px",overflow:"hidden",border:"1px solid #eee"}}>
+              <div style={{position:"relative"}}>
+                <img src={p.image} alt={p.name} style={{width:"100%",height:"180px",objectFit:"cover"}}/>
+                <span style={{position:"absolute",top:"6px",left:"6px",background:"#ff0000",color:"#fff",padding:"2px 6px",borderRadius:"4px",fontSize:"11px"}}>-42%</span>
+              </div>
+              <div style={{padding:"8px"}}>
+                <div style={{fontSize:"12px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>⭐⭐⭐⭐⭐ {p.name}</div>
+                <div style={{marginTop:"4px"}}>
+                  <span style={{fontWeight:"bold",fontSize:"14px"}}>${salePrice}</span>
+                  <span style={{fontSize:"11px",color:"#888",textDecoration:"line-through",marginLeft:"6px"}}>${originalPrice}</span>
+                </div>
+                <div style={{fontSize:"10px",color:"green"}}>Free Shipping</div>
+                <button onClick={()=>buy(p)} disabled={buyingId===p.id} style={{marginTop:"8px",width:"100%",background:"#FFC107",color:"#000",border:"none",padding:"10px",borderRadius:"20px",fontWeight:"bold",cursor:"pointer",fontSize:"13px"}}>
+                  {buyingId===p.id ? "Going to Stripe..." : `Buy Now - $${totalWithShipping}`}
+                </button>
+              </div>
+            </div>
+          )
+        })}
       </div>
-
-      {loading?<div className="p-10 text-center">Loading from Admin...</div>:
-      <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 p-2">
-        {filtered.map(p=>
-          <div key={p.id} className="bg-white rounded-lg border overflow-hidden">
-            <div className="h-40 bg-purple-100 relative">
-              <img src={p.image} alt={p.name} className="w-full h-full object-cover"/>
-              <div className="absolute top-1 left-1 bg-red-600 text-white text-xs px-1 rounded">-42%</div>
-            </div>
-            <div className="p-2">
-              <div className="text-xs h-8 overflow-hidden">{p.name}</div>
-              <div className="text-xs text-orange-500 mt-1">★★★★★ <span className="text-gray-400">{p.category}</span></div>
-              <div className="font-black mt-1">${p.price} <span className="text-xs line-through text-gray-400 ml-1">{Number(p.price)*1.7}</span></div>
-              <div className="text-xs text-green-600">Free Shipping</div>
-              <button onClick={()=>buy(p)} className="w-full mt-2 bg-yellow-400 text-black text-xs font-black py-2 rounded-full">Buy Now</button>
-            </div>
-          </div>
-        )}
-      </div>}
     </div>
   )
 } 

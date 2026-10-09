@@ -1,50 +1,67 @@
 "use client"
-import { useState, useEffect } from "react"
+import { Suspense, useState } from "react"
 import { useCart } from "@/components/cart-provider"
 import { useSearchParams } from "next/navigation"
+import Link from "next/link"
 
-export default function CheckoutPage() {
+export const dynamic = 'force-dynamic'
+
+function CheckoutContent() {
   const { items, subtotal } = useCart()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
 
-  // Get price from URL if direct buy ?price=50&name=Shirt
   const urlPrice = searchParams.get("price")
-  const urlName = searchParams.get("name") || "Jhummka Product"
- 
+  const urlName = searchParams.get("name")
+  const urlId = searchParams.get("id")
   const SHIPPING = 25
+
   let displayItems: any[] = []
-  let total = 0
+  let cartTotal = 0
 
   if (items.length > 0) {
-    // From cart
     displayItems = items
-    total = subtotal + SHIPPING
+    cartTotal = subtotal
   } else if (urlPrice) {
-    // Direct buy from product page
-    displayItems = [{ name: urlName, price: Number(urlPrice), quantity: 1 }]
-    total = Number(urlPrice) + SHIPPING
-  } else {
-    // Default fallback - $2 product
-    displayItems = [{ name: "Jhummka - Sample", price: 2, quantity: 1 }]
-    total = 27
+    displayItems = [{
+      id: urlId || "direct",
+      name: urlName || "Product",
+      price: Number(urlPrice),
+      quantity: 1,
+      image: ""
+    }]
+    cartTotal = Number(urlPrice)
   }
 
+  const finalTotal = cartTotal + (displayItems.length > 0 ? SHIPPING : 0)
+
   async function pay() {
+    if (displayItems.length === 0) {
+      alert("Cart empty! Go shop.")
+      window.location.href = "/"
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: displayItems }),
+        body: JSON.stringify({
+          items: displayItems.map((i:any)=>({
+            name: i.name,
+            price: Number(i.price),
+            quantity: i.quantity || 1
+          }))
+        }),
       })
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url
       } else {
-        alert("Stripe error: " + data.error)
+        alert("Stripe error: " + (data.error || "No URL"))
         setLoading(false)
       }
     } catch (e) {
@@ -53,38 +70,61 @@ export default function CheckoutPage() {
     }
   }
 
+  if (displayItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-black">
+        <h1 className="text-2xl font-black">Your Cart is Empty</h1>
+        <p className="mt-2 text-gray-600">Add products to checkout</p>
+        <Link href="/" className="mt-6 bg-yellow-400 text-black px-8 py-3 rounded-full font-black">
+          Go Shopping
+        </Link>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-md mx-auto p-6 mt-10 bg-black text-white min-h-screen">
-      <h1 className="text-2xl font-bold">Checkout - Virtual</h1>
-     
-      <div className="mt-6 space-y-2 text-sm border border-white/20 p-4">
-        {displayItems.map((item, i) => (
-          <div key={i} className="flex justify-between">
-            <span>{item.name} x {item.quantity}</span>
-            <span>${item.price * item.quantity}</span>
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-2xl mx-auto p-4">
+        <Link href="/" className="text-sm">← Back</Link>
+        <h1 className="text-2xl font-black mt-4">Checkout</h1>
+        <div className="bg-white rounded-lg border mt-4 p-4">
+          <h2 className="font-bold">Order ({displayItems.length})</h2>
+          <div className="mt-3 space-y-2">
+            {displayItems.map((item:any, i:number)=>(
+              <div key={i} className="flex justify-between text-sm">
+                <span className="flex-1 truncate pr-4">{item.name} x {item.quantity || 1}</span>
+                <span className="font-bold">${(Number(item.price) * (item.quantity || 1)).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm pt-2 border-t">
+              <span>Subtotal</span><span>${cartTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Shipping</span><span>${SHIPPING.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-black text-lg pt-2 border-t">
+              <span>Total</span><span>${finalTotal.toFixed(2)}</span>
+            </div>
           </div>
-        ))}
-        <div className="flex justify-between pt-2 border-t border-white/20">
-          <span>Shipping</span><span>$25</span>
         </div>
-        <div className="flex justify-between font-bold text-lg pt-2">
-          <span>Total</span><span>${total}</span>
+        <div className="bg-white rounded-lg border mt-4 p-4">
+          <input placeholder="First Name" value={firstName} onChange={e=>setFirstName(e.target.value)} className="border p-3 w-full mt-3 rounded text-black" />
+          <input placeholder="Last Name" value={lastName} onChange={e=>setLastName(e.target.value)} className="border p-3 w-full mt-3 rounded text-black" />
+          <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="border p-3 w-full mt-3 rounded text-black" />
+          <button onClick={pay} disabled={loading} className="bg-yellow-400 text-black p-4 w-full mt-6 font-black rounded-full text-lg disabled:opacity-50">
+            {loading ? "Going to Stripe..." : `Pay $${finalTotal.toFixed(2)} - Stripe`}
+          </button>
+          <p className="text-xs mt-3 text-center">Apple Pay • Card • Klarna - Stripe</p>
         </div>
       </div>
-
-      <input placeholder="First Name" value={firstName} onChange={e=>setFirstName(e.target.value)} className="border p-3 w-full mt-6 bg-transparent text-white" />
-      <input placeholder="Last Name" value={lastName} onChange={e=>setLastName(e.target.value)} className="border p-3 w-full mt-4 bg-transparent text-white" />
-     
-      <button onClick={pay} disabled={loading} className="bg-white text-black p-3 w-full mt-6 font-bold">
-        {loading ? "Redirecting..." : `Pay $${total} with Stripe - Secure Checkout`}
-      </button>
-      <p className="text-xs mt-3 text-center opacity-70">Apple Pay • Card • Klarna • Bank • Link</p>
-
-      {items.length === 0 && !urlPrice && (
-        <p className="text-xs mt-6 text-yellow-300 text-center">
-          Note: Cart empty - showing demo $2 product. Add to cart or use Buy Now with ?price
-        </p>
-      )}
     </div>
+  )
+}
+
+export default function Page(){
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Loading checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   )
 } 

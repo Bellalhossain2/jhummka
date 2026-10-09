@@ -7,26 +7,55 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, price } = await req.json()
-    const amount = Math.round(Number(price) * 100)
+    const body = await req.json()
+   
+    // Support both formats: old {name,price} and new {items:[]}
+    let items: any[] = []
+    if (body.items && Array.isArray(body.items)) {
+      items = body.items
+    } else if (body.price) {
+      // Old format
+      items = [{ name: body.name || 'Product', price: body.price, quantity: 1 }]
+    } else {
+      return NextResponse.json({ error: 'No items provided' }, { status: 400 })
+    }
+
+    const SHIPPING_CENTS = 2500 // $25
+
+    const line_items = items.map((item: any) => {
+      let price = Number(item.price)
+      if (isNaN(price) || price <= 0) price = 2 // fallback
+      return {
+        price_data: {
+          currency: 'usd',
+          product_data: { name: item.name || 'JhummkaTok Product' },
+          unit_amount: Math.round(price * 100),
+        },
+        quantity: Number(item.quantity) || 1,
+      }
+    })
+
+    // Add shipping
+    line_items.push({
+      price_data: {
+        currency: 'usd',
+        product_data: { name: 'Shipping & Handling' },
+        unit_amount: SHIPPING_CENTS,
+      },
+      quantity: 1,
+    })
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: { name: name || 'Jhummka Product' },
-          unit_amount: amount,
-        },
-        quantity: 1,
-      }],
+      line_items,
       mode: 'payment',
       success_url: 'https://jhummkatok.com/success',
-      cancel_url: 'https://jhummkatok.com/checkout',
+      cancel_url: 'https://jhummkatok.com/',
     })
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
+    console.error(err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 } 

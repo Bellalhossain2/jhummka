@@ -9,18 +9,16 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
    
-    // Support both formats: old {name,price} and new {items:[]}
     let items: any[] = []
     if (body.items && Array.isArray(body.items)) {
       items = body.items
     } else if (body.price) {
-      // Old format
       items = [{ name: body.name || 'Product', price: body.price, quantity: 1 }]
     } else {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 })
     }
 
-    const SHIPPING_CENTS = 2500 // $25
+    const SHIPPING_CENTS = 500 // $5 shipping only!
 
     const line_items = items.map((item: any) => {
       let price = Number(item.price)
@@ -35,15 +33,22 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Add shipping
-    line_items.push({
-      price_data: {
-        currency: 'usd',
-        product_data: { name: 'Shipping & Handling' },
-        unit_amount: SHIPPING_CENTS,
-      },
-      quantity: 1,
-    })
+    // Calculate subtotal to check free shipping
+    const subtotalCents = line_items.reduce((sum: number, li: any) => sum + li.price_data.unit_amount * li.quantity, 0)
+   
+    // FREE shipping if order >= $20 (2000 cents)
+    const shippingCents = subtotalCents >= 2000 ? 0 : SHIPPING_CENTS
+
+    if (shippingCents > 0) {
+      line_items.push({
+        price_data: {
+          currency: 'usd',
+          product_data: { name: 'Shipping & Handling' },
+          unit_amount: shippingCents,
+        },
+        quantity: 1,
+      })
+    }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -55,7 +60,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
-    console.error(err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 } 

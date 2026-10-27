@@ -1,130 +1,105 @@
 "use client"
-import { Suspense, useState } from "react"
 import { useCart } from "@/components/cart-provider"
-import { useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
-export const dynamic = 'force-dynamic'
+export default function CheckoutPage() {
+  const { items, cartTotal } = useCart() as any
+  const [address, setAddress] = useState("")
+  const [miles, setMiles] = useState(1)
+  const [isUpstairs, setIsUpstairs] = useState(false)
+  const [deliveryType, setDeliveryType] = useState("grocery_now")
+  const [loadingMiles, setLoadingMiles] = useState(false)
 
-function CheckoutContent() {
-  const { items, subtotal } = useCart()
-  const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(false)
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
+  // YOUR STORE LOCATION - CHANGE THIS TO YOUR ACTUAL STORE!
+  const STORE_LAT = 40.7128 // New York City - change to your store lat
+  const STORE_LNG = -74.0060 // NYC lng
 
-  const urlPrice = searchParams.get("price")
-  const urlName = searchParams.get("name")
-  const urlId = searchParams.get("id")
-  const SHIPPING = 25
-
-  let displayItems: any[] = []
-  let cartTotal = 0
-
-  if (items.length > 0) {
-    displayItems = items
-    cartTotal = subtotal
-  } else if (urlPrice) {
-    displayItems = [{
-      id: urlId || "direct",
-      name: urlName || "Product",
-      price: Number(urlPrice),
-      quantity: 1,
-      image: ""
-    }]
-    cartTotal = Number(urlPrice)
-  }
-
-  const finalTotal = cartTotal + (displayItems.length > 0 ? SHIPPING : 0)
-
-  async function pay() {
-    if (displayItems.length === 0) {
-      alert("Cart empty! Go shop.")
-      window.location.href = "/"
-      return
-    }
-    setLoading(true)
+  // AUTO CALCULATE DISTANCE FROM ADDRESS
+  async function calculateDistanceFromAddress() {
+    if (!address) return alert("Enter address first!")
+    setLoadingMiles(true)
     try {
-      const res = await fetch("/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: displayItems.map((i:any)=>({
-            name: i.name,
-            price: Number(i.price),
-            quantity: i.quantity || 1
-          }))
-        }),
-      })
+      // FREE geocoding - OpenStreetMap
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
       const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        alert("Stripe error: " + (data.error || "No URL"))
-        setLoading(false)
-      }
+      if (!data[0]) { alert("Address not found, try: 10001 or Brooklyn, NY"); setLoadingMiles(false); return; }
+     
+      const lat = parseFloat(data[0].lat)
+      const lng = parseFloat(data[0].lon)
+     
+      // Haversine distance (miles)
+      const R = 3959 // Earth radius miles
+      const dLat = (lat - STORE_LAT) * Math.PI / 180
+      const dLng = (lng - STORE_LNG) * Math.PI / 180
+      const a = Math.sin(dLat/2)**2 + Math.cos(STORE_LAT*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLng/2)**2
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+      const distance = R * c
+
+      setMiles(parseFloat(distance.toFixed(1)))
     } catch (e) {
-      alert("Failed")
-      setLoading(false)
+      alert("Error getting distance - enter manually")
     }
+    setLoadingMiles(false)
   }
 
-  if (displayItems.length === 0) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-black">
-        <h1 className="text-2xl font-black">Your Cart is Empty</h1>
-        <p className="mt-2 text-gray-600">Add products to checkout</p>
-        <Link href="/" className="mt-6 bg-yellow-400 text-black px-8 py-3 rounded-full font-black">
-          Go Shopping
-        </Link>
-      </div>
-    )
+  async function useMyLocation() {
+    setLoadingMiles(true)
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude
+      const lng = pos.coords.longitude
+      const R = 3959
+      const dLat = (lat - STORE_LAT) * Math.PI / 180
+      const dLng = (lng - STORE_LNG) * Math.PI / 180
+      const a = Math.sin(dLat/2)**2 + Math.cos(STORE_LAT*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLng/2)**2
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+      const distance = R * c
+      setMiles(parseFloat(distance.toFixed(1)))
+      setAddress(`My GPS Location (${distance.toFixed(1)} miles)`)
+      setLoadingMiles(false)
+    }, () => { alert("GPS denied - type address"); setLoadingMiles(false) })
   }
+
+  // YOUR DELIVERY FORMULA
+  let deliveryCharge = 0
+  if (deliveryType === "pickup") deliveryCharge = 0
+  else if (deliveryType === "normal") deliveryCharge = 7
+  else {
+    const base = 10
+    const shoppingExtra = Math.max(0, Math.ceil(cartTotal / 20) - 1) * 5
+    const milesExtra = miles <= 1 ? 0 : Math.ceil(miles - 1) * 5
+    const upstairsExtra = isUpstairs ? Math.ceil(cartTotal / 20) * 5 : 0
+    deliveryCharge = base + shoppingExtra + milesExtra + upstairsExtra
+  }
+
+  const finalTotal = cartTotal + deliveryCharge
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-2xl mx-auto p-4">
-        <Link href="/" className="text-sm">← Back</Link>
-        <h1 className="text-2xl font-black mt-4">Checkout</h1>
-        <div className="bg-white rounded-lg border mt-4 p-4">
-          <h2 className="font-bold">Order ({displayItems.length})</h2>
-          <div className="mt-3 space-y-2">
-            {displayItems.map((item:any, i:number)=>(
-              <div key={i} className="flex justify-between text-sm">
-                <span className="flex-1 truncate pr-4">{item.name} x {item.quantity || 1}</span>
-                <span className="font-bold">${(Number(item.price) * (item.quantity || 1)).toFixed(2)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between text-sm pt-2 border-t">
-              <span>Subtotal</span><span>${cartTotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Shipping</span><span>${SHIPPING.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-black text-lg pt-2 border-t">
-              <span>Total</span><span>${finalTotal.toFixed(2)}</span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-black text-white p-4">
+      <h1 className="font-black mb-4">AUTO-DISTANCE DELIVERY</h1>
+
+      <div className="bg-zinc-900 p-4 rounded-xl mb-4">
+        <input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Enter delivery address: e.g. 123 Main St, Brooklyn NY 11201" className="w-full bg-black border border-gray-700 p-3 rounded text-sm mb-2"/>
+        <div className="flex gap-2">
+          <Button onClick={calculateDistanceFromAddress} disabled={loadingMiles} className="flex-1 bg-yellow-400 text-black font-bold h-10">{loadingMiles?"Calculating...":`📍 Calculate Miles (${miles} mi)`}</Button>
+          <Button onClick={useMyLocation} variant="outline" className="border-gray-700">📲 Use GPS</Button>
         </div>
-        <div className="bg-white rounded-lg border mt-4 p-4">
-          <input placeholder="First Name" value={firstName} onChange={e=>setFirstName(e.target.value)} className="border p-3 w-full mt-3 rounded text-black" />
-          <input placeholder="Last Name" value={lastName} onChange={e=>setLastName(e.target.value)} className="border p-3 w-full mt-3 rounded text-black" />
-          <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="border p-3 w-full mt-3 rounded text-black" />
-          <button onClick={pay} disabled={loading} className="bg-yellow-400 text-black p-4 w-full mt-6 font-black rounded-full text-lg disabled:opacity-50">
-            {loading ? "Going to Stripe..." : `Pay $${finalTotal.toFixed(2)} - Stripe`}
-          </button>
-          <p className="text-xs mt-3 text-center">Apple Pay • Card • Klarna - Stripe</p>
-        </div>
+        <div className="text-xs text-green-400 mt-2">Auto Distance: {miles} miles from your NYC store</div>
+      </div>
+
+      <div className="bg-zinc-900 p-4 rounded-xl mb-4 space-y-2">
+        <div onClick={()=>setDeliveryType("grocery_now")} className={`p-3 border rounded cursor-pointer ${deliveryType==="grocery_now"?"border-yellow-400":"border-gray-700"}`}>🚀 Grocery RIGHT NOW - ${deliveryCharge} (Base $10 + shopping + {miles} miles)</div>
+        <div onClick={()=>setDeliveryType("normal")} className={`p-3 border rounded cursor-pointer ${deliveryType==="normal"?"border-yellow-400":"border-gray-700"}`}>📦 Normal All Items - $7 flat</div>
+        <div onClick={()=>setDeliveryType("pickup")} className={`p-3 border rounded cursor-pointer ${deliveryType==="pickup"?"border-yellow-400":"border-gray-700"}`}>🚗 Pickup FREE</div>
+        <label className="flex items-center gap-2 text-sm pt-2"><input type="checkbox" checked={isUpstairs} onChange={e=>setIsUpstairs(e.target.checked)}/> Upstairs? (+$5 per $20)</label>
+      </div>
+
+      <div className="bg-zinc-900 p-4 rounded-xl">
+        <div className="flex justify-between text-sm"><span>Subtotal</span><span>${cartTotal.toFixed(2)}</span></div>
+        <div className="flex justify-between text-sm mt-2"><span>Delivery ({miles} miles)</span><span>${deliveryCharge.toFixed(2)}</span></div>
+        <div className="flex justify-between font-black text-lg border-t border-gray-700 pt-2 mt-3"><span>TOTAL</span><span className="text-yellow-400">${finalTotal.toFixed(2)}</span></div>
+        <Button className="w-full mt-4 bg-yellow-400 text-black font-black h-12 rounded-full">PAY ${finalTotal.toFixed(2)}</Button>
       </div>
     </div>
-  )
-}
-
-export default function Page(){
-  return (
-    <Suspense fallback={<div className="p-10 text-center">Loading checkout...</div>}>
-      <CheckoutContent />
-    </Suspense>
   )
 } 

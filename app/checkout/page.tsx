@@ -1,9 +1,8 @@
 "use client"
+export const dynamic = 'force-dynamic'
 import { useCart } from "@/components/cart-provider"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
-
-export const dynamic = 'force-dynamic' // FIX: Don't prerender checkout
 
 export default function CheckoutPage() {
   const cart = useCart() as any
@@ -132,7 +131,7 @@ export default function CheckoutPage() {
         <div className="flex justify-between text-sm"><span>Subtotal</span><span>${safeCartTotal.toFixed(2)}</span></div>
         <div className="flex justify-between text-sm mt-2 font-bold"><span>Delivery ({miles} mi)</span><span className="text-yellow-400">${deliveryCharge.toFixed(2)}</span></div>
         <div className="flex justify-between font-black text-lg border-t border-gray-700 pt-2 mt-3"><span>TOTAL</span><span className="text-yellow-400">${finalTotal.toFixed(2)}</span></div>
-        <Button className="w-full mt-4 bg-yellow-400 text-black font-black h-12 rounded-full">PAY ${finalTotal.toFixed(2)}</Button>
+        <Button className="w-full mt-4 bg-yellow-400 text-black font-black h-12 rounded-full">PAY ${finalTotal||0).toFixed(2)}</Button>
       </div>
     </div>
   )

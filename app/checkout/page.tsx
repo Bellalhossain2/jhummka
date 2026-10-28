@@ -1,141 +1,79 @@
 "use client"
 export const dynamic = 'force-dynamic'
-import { useCart } from "@/components/cart-provider"
-import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 
 export default function CheckoutPage() {
-  const cart = useCart() as any
-  const items = cart?.items || []
-  const safeCartTotal = cart?.cartTotal || 0
- 
   const [address, setAddress] = useState("")
-  const [miles, setMiles] = useState(0)
   const [drivingMiles, setDrivingMiles] = useState(0)
-  const [isUpstairs, setIsUpstairs] = useState(false)
-  const [deliveryType, setDeliveryType] = useState("grocery_now")
-  const [loadingMiles, setLoadingMiles] = useState(false)
-  const [autoCalculated, setAutoCalculated] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+  const [cartTotal] = useState(45) // test $45 groceries
 
-  // ====== ADD YOUR STORES HERE - CUSTOMER SELECTS ANY STORE ======
   const STORES = [
-    { id: 1, name: "premium supermrket - Ozone Park", address: "1196 Liberty Ave, Ozone Park, NY 11416", lat: 40.6829, lng: -73.8483 },
-    { id: 2, name: "whole food market - wiilumesburg", address: "774 grand st, brooklyn, NY 11211", lat: 40.7112, lng: -73.9396 },
-    { id: 3, name: "golden farms supermarket - Brooklyn", address: "416 cresent st, Brooklyn, NY 11208", lat: 406789, lng: -73.9072 },
-    { id: 4, name: "premium supermarket - jamaica", address: "168-07 hillside ave,jamaica, NY 11432", lat:407086, lng: -73.7962 }, 
+    { id: 1, name: "Ozone Park - 1196 Liberty Ave", lat: 40.6829, lng: -73.8483 },
+    { id: 2, name: "Brooklyn - 774 Grand St", lat: 40.7112, lng: -73.9396 },
+    { id: 3, name: "Brooklyn - 416 Crescent St", lat: 40.6789, lng: -73.9072 },
+    { id: 4, name: "Jamaica - 168-07 Hillside Ave", lat: 40.7086, lng: -73.7962 },
   ]
-  const [selectedStore, setSelectedStore] = useState(STORES[0])
+  const [store, setStore] = useState(STORES[0])
 
-  useEffect(() => {
-    setMounted(true)
-    const savedAddr = localStorage.getItem("customer_delivery_address")
-    const savedMiles = localStorage.getItem("customer_delivery_miles")
-    const savedStoreId = localStorage.getItem("selected_store_id")
-    if (savedAddr) setAddress(savedAddr)
-    if (savedMiles) { setMiles(parseFloat(savedMiles)); setDrivingMiles(parseFloat(savedMiles)); setAutoCalculated(true) }
-    if (savedStoreId) {
-      const found = STORES.find(s => s.id.toString() === savedStoreId)
-      if (found) setSelectedStore(found)
-    }
-  }, [])
-
-  async function calculateDistanceFromAddress() {
-    if (!address) return alert("Enter customer address first!")
-    setLoadingMiles(true)
+  async function getMiles() {
+    if (!address) return alert("Type customer address first!")
+    setLoading(true)
     try {
       const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
-      const geoData = await geo.json()
-      if (!geoData[0]) { alert("Address not found! Try: 87-01 101st Ave, Queens, NY"); setLoadingMiles(false); return; }
-      const custLat = parseFloat(geoData[0].lat)
-      const custLng = parseFloat(geoData[0].lon)
-
-      // REAL DRIVING DISTANCE: Customer -> Selected Store
-      try {
-        const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${custLng},${custLat};${selectedStore.lng},${selectedStore.lat}?overview=false`)
-        const routeData = await routeRes.json()
-        if (routeData.routes && routeData.routes[0]) {
-          const realMiles = routeData.routes[0].distance / 1609.34
-          const final = parseFloat(realMiles.toFixed(1))
-          setMiles(final); setDrivingMiles(final); setAutoCalculated(true)
-          localStorage.setItem("customer_delivery_address", address)
-          localStorage.setItem("customer_delivery_miles", final.toString())
-          localStorage.setItem("selected_store_id", selectedStore.id.toString())
-          setLoadingMiles(false); return
-        }
-      } catch {}
-
-      // Fallback straight line
-      const R = 3959
-      const dLat = (custLat - selectedStore.lat) * Math.PI / 180
-      const dLng = (custLng - selectedStore.lng) * Math.PI / 180
-      const a = Math.sin(dLat/2)**2 + Math.cos(selectedStore.lat*Math.PI/180)*Math.cos(custLat*Math.PI/180)*Math.sin(dLng/2)**2
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-      const final = parseFloat((R * c).toFixed(1))
-      setMiles(final); setDrivingMiles(final); setAutoCalculated(true)
-      localStorage.setItem("customer_delivery_address", address)
-      localStorage.setItem("customer_delivery_miles", final.toString())
-      localStorage.setItem("selected_store_id", selectedStore.id.toString())
-    } catch (e) { alert("Error") }
-    setLoadingMiles(false)
+      const data = await geo.json()
+      if (!data[0]) { alert("Address not found! Use full address like: 87-01 101st Ave, Queens, NY"); setLoading(false); return; }
+      const lat = parseFloat(data[0].lat)
+      const lng = parseFloat(data[0].lon)
+      const route = await fetch(`https://router.project-osrm.org/route/v1/driving/${lng},${lat};${store.lng},${store.lat}?overview=false`)
+      const routeData = await route.json()
+      let mi = 0
+      if (routeData.routes?.[0]) mi = routeData.routes[0].distance / 1609.34
+      else {
+        const R=3959, dLat=(lat-store.lat)*Math.PI/180, dLng=(lng-store.lng)*Math.PI/180
+        const a=Math.sin(dLat/2)**2+Math.cos(store.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLng/2)**2
+        mi = R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+      }
+      setDrivingMiles(parseFloat(mi.toFixed(1))); setDone(true)
+    } catch(e){ alert("Error - try again") }
+    setLoading(false)
   }
 
-  let deliveryCharge = 0
-  if (deliveryType === "pickup") deliveryCharge = 0
-  else if (deliveryType === "normal") deliveryCharge = 7
-  else {
-    const base = 10
-    const shoppingExtra = Math.max(0, Math.ceil(safeCartTotal / 20) - 1) * 5
-    const milesExtra = drivingMiles <= 1 ? 0 : Math.ceil(drivingMiles - 1) * 5
-    const upstairsExtra = isUpstairs ? Math.ceil(safeCartTotal / 20) * 5 : 0
-    deliveryCharge = base + shoppingExtra + milesExtra + upstairsExtra
-  }
-  const finalTotal = safeCartTotal + deliveryCharge
-
-  if (!mounted) return <div className="min-h-screen bg-black text-white p-4">Loading...</div>
+  const base=10, cartExtra=Math.max(0,Math.ceil(cartTotal/20)-1)*5, mileExtra=drivingMiles<=1?0:Math.ceil(drivingMiles-1)*5
+  const fee=base+cartExtra+mileExtra
+  const total=cartTotal+fee
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 max-w-lg mx-auto">
-      <h1 className="font-black mb-3 text-xl">🏪 Select Store</h1>
-
-      <div className="bg-zinc-900 p-3 rounded-xl mb-4 border border-yellow-400/30">
-        <label className="text-xs text-yellow-400 font-bold mb-2 block">CHOOSE STORE</label>
-        <select value={selectedStore.id} onChange={e=>{ const s = STORES.find(x=>x.id.toString()===e.target.value); if(s){setSelectedStore(s); setAutoCalculated(false)} }} className="w-full bg-black border border-zinc-700 p-3 rounded text-sm text-white">
-          {STORES.map(s => <option key={s.id} value={s.id}>{s.name} - {s.address}</option>)}
+    <div style={{minHeight:'100vh', background:'black', color:'white', padding:'16px', maxWidth:'500px', margin:'0 auto'}}>
+      <h1 style={{fontWeight:'900', fontSize:'20px'}}>🏪 TEST MILES & FEE</h1>
+     
+      <div style={{background:'#18181b', padding:'16px', borderRadius:'12px', marginTop:'16px', border:'1px solid #333'}}>
+        <label style={{fontSize:'12px', color:'#facc15', fontWeight:'bold'}}>SELECT STORE</label>
+        <select value={store.id} onChange={e=>{setStore(STORES.find(s=>s.id.toString()===e.target.value)!); setDone(false)}} style={{width:'100%', background:'black', border:'1px solid #444', padding:'12px', borderRadius:'8px', color:'white', marginTop:'8px'}}>
+          {STORES.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <div className="text-[11px] text-gray-400 mt-2">Selected: {selectedStore.address}</div>
       </div>
 
-      <div className="bg-zinc-900 p-4 rounded-xl mb-4 border border-zinc-800">
-        <label className="text-xs text-yellow-400 font-bold mb-1 block">CUSTOMER ADDRESS</label>
-        <input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Ex: 102-10 Atlantic Ave, Ozone Park, NY" className="w-full bg-black border border-yellow-400/30 p-3 rounded text-sm mb-2 text-white"/>
-        <Button onClick={calculateDistanceFromAddress} disabled={loadingMiles} className="w-full bg-yellow-400 text-black font-black h-12 text-sm">
-          {loadingMiles ? "Calculating..." : autoCalculated ? `✓ ${drivingMiles} mi to ${selectedStore.name}` : "📍 GET MILES & FEE"}
-        </Button>
-        {autoCalculated && (
-          <div className="mt-3 bg-black p-3 rounded text-xs">
-            <div className="flex justify-between"><span>Customer:</span><span className="text-gray-300 truncate ml-2">{address}</span></div>
-            <div className="flex justify-between mt-1"><span>Store:</span><span className="text-yellow-400">{selectedStore.name}</span></div>
-            <div className="flex justify-between mt-2 font-bold text-green-400"><span>🚗 Distance:</span><span>{drivingMiles} miles</span></div>
+      <div style={{background:'#18181b', padding:'16px', borderRadius:'12px', marginTop:'12px', border:'1px solid #333'}}>
+        <label style={{fontSize:'12px', color:'#facc15', fontWeight:'bold'}}>CUSTOMER ADDRESS</label>
+        <input value={address} onChange={e=>setAddress(e.target.value)} placeholder="102-10 Atlantic Ave, Ozone Park, NY" style={{width:'100%', background:'black', border:'1px solid #facc15', padding:'12px', borderRadius:'8px', color:'white', marginTop:'8px'}}/>
+        <button onClick={getMiles} disabled={loading} style={{width:'100%', background:'#facc15', color:'black', fontWeight:'900', padding:'14px', borderRadius:'8px', marginTop:'12px'}}>
+          {loading ? "Calculating..." : done ? `✓ ${drivingMiles} mi to ${store.name}` : "📍 GET MILES & FEE"}
+        </button>
+        {done && (
+          <div style={{background:'black', padding:'12px', borderRadius:'8px', marginTop:'12px', fontSize:'12px'}}>
+            <div>Customer: {address}</div>
+            <div style={{color:'#facc15', marginTop:'4px'}}>Store: {store.name}</div>
+            <div style={{color:'#4ade80', fontWeight:'bold', marginTop:'8px', fontSize:'14px'}}>🚗 Driving: {drivingMiles} miles</div>
+            <div style={{marginTop:'8px'}}>Fee: Base $10 + Cart ${cartExtra} + Miles ${drivingMiles}mi (${mileExtra}) = <span style={{color:'#facc15', fontWeight:'bold'}}>${fee}</span></div>
+            <div style={{fontWeight:'900', fontSize:'16px', marginTop:'8px', borderTop:'1px solid #333', paddingTop:'8px'}}>TOTAL: Groceries ${cartTotal} + Fee ${fee} = ${total}</div>
           </div>
         )}
       </div>
 
-      <div className="bg-zinc-900 p-4 rounded-xl mb-4 space-y-2 border border-zinc-800">
-        <div onClick={()=>setDeliveryType("grocery_now")} className={`p-3 border rounded cursor-pointer ${deliveryType==="grocery_now"?"border-yellow-400 bg-yellow-400/10":"border-gray-700"}`}>
-          <div className="font-bold text-sm">🚀 RIGHT NOW - ${(deliveryCharge||0).toFixed(2)}</div>
-          <div className="text-[11px] text-gray-400">Base $10 + Cart ${Math.max(0, Math.ceil(safeCartTotal/20)-1)*5} + Miles {drivingMiles}mi ({drivingMiles<=1?0:Math.ceil(drivingMiles-1)*5})</div>
-        </div>
-        <div onClick={()=>setDeliveryType("normal")} className={`p-3 border rounded cursor-pointer ${deliveryType==="normal"?"border-yellow-400":"border-gray-700"}`}>📦 Normal - $7.00</div>
-        <div onClick={()=>setDeliveryType("pickup")} className={`p-3 border rounded cursor-pointer ${deliveryType==="pickup"?"border-yellow-400":"border-gray-700"}`}>🚗 Pickup FREE at {selectedStore.name}</div>
-        <label className="flex items-center gap-2 text-sm pt-2"><input type="checkbox" checked={isUpstairs} onChange={e=>setIsUpstairs(e.target.checked)}/> Upstairs?</label>
-      </div>
-
-      <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <div className="flex justify-between text-sm"><span>Groceries</span><span>${(safeCartTotal||0).toFixed(2)}</span></div>
-        <div className="flex justify-between text-sm mt-2 font-bold"><span>Fee ({drivingMiles} mi to {selectedStore.name})</span><span className="text-yellow-400">${(deliveryCharge||0).toFixed(2)}</span></div>
-        <div className="flex justify-between font-black text-lg border-t border-gray-700 pt-2 mt-3"><span>TOTAL</span><span className="text-yellow-400">${(finalTotal||0).toFixed(2)}</span></div>
-        <Button className="w-full mt-4 bg-yellow-400 text-black font-black h-12 rounded-full">PAY ${(finalTotal||0).toFixed(2)}</Button>
+      <div style={{background:'#18181b', padding:'12px', borderRadius:'8px', marginTop:'12px', fontSize:'11px', color:'#888'}}>
+        How to check: 1) Select store 2) Type customer address 3) Click button 4) See miles & fee auto! Real driving distance Customer → Store.
       </div>
     </div>
   )

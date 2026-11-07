@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ref, set, onValue, remove, get } from 'firebase/database'
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
+import MusicPanel from '@/components/music-panel'
 
 const PRODUCTS = [
   {id:1, name:"Fresh Guava", price:"0.8", image:"https://images.unsplash.com/photo-1536511132770-e5058c7fbf0a?w=400"},
@@ -21,11 +22,12 @@ export default function Page() {
   const [isLive, setIsLive] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [selectedProduct, setSelectedProduct] = useState<any>(PRODUCTS[0])
+  const [selectedMusic, setSelectedMusic] = useState<any>(null)
   const localVid = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
-    onValue(ref(db, 'jhummka_shop_rooms_v24'), (snap) => setRooms(snap.val() || {}))
+    onValue(ref(db, 'jhummka_shop_rooms_v24'), (s) => setRooms(s.val() || {}))
     return () => unsub()
   }, [])
 
@@ -42,16 +44,14 @@ export default function Page() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true})
       if(localVid.current){ localVid.current.srcObject = stream; localVid.current.style.display='block' }
-      const roomRef = ref(db, 'jhummka_shop_rooms_v24/room_'+roomNum)
-      await set(roomRef, { seller: user.displayName, sellerId: user.uid, productId: product ? product.id : selectedProduct.id, productName: product ? product.name : selectedProduct.name, time: Date.now() })
+      await set(ref(db, 'jhummka_shop_rooms_v24/room_'+roomNum), { seller: user.displayName, sellerId: user.uid, productId: product ? product.id : selectedProduct.id, productName: product ? product.name : selectedProduct.name, music: selectedMusic?.title || 'No Music', time: Date.now() })
       setIsLive(true)
     } catch(e:any){ alert(e.message) }
   }
 
   const leaveAndSave = async () => {
-    const roomRef = ref(db, 'jhummka_shop_rooms_v24/room_'+selectedRoom)
-    const snap = await get(roomRef)
-    if(snap.exists() && snap.val().sellerId === user?.uid) await remove(roomRef)
+    const snap = await get(ref(db, 'jhummka_shop_rooms_v24/room_'+selectedRoom))
+    if(snap.exists() && snap.val().sellerId === user?.uid) await remove(ref(db, 'jhummka_shop_rooms_v24/room_'+selectedRoom))
     setIsLive(false)
   }
 
@@ -64,22 +64,18 @@ export default function Page() {
           {!user ? <button onClick={loginGoogle} className="bg-white text-black px-3 py-1 rounded-full text-xs">Google Login</button> : <span className="text-xs">{user.displayName}</span>}
         </div>
       </div>
-
       <div className="p-2 grid grid-cols-2 gap-2">
-        {PRODUCTS.map(p => {
-          return (
-            <div key={p.id} className="border rounded-lg overflow-hidden">
-              <img src={p.image} alt={p.name} className="w-full h-32 object-cover" />
-              <div className="p-2">
-                <div className="font-bold text-xs">{p.name} - ${p.price}</div>
-                <button onClick={()=>setCart([...cart, p])} className="w-full bg-black text-white text-xs py-2 rounded-full mt-1">Add to Cart</button>
-                <button onClick={()=>joinLive((p.id % 15)+1, p)} className="w-full bg-green-500 text-black text-xs py-1 rounded-full mt-1 font-black">Live Sell This</button>
-              </div>
+        {PRODUCTS.map(p => (
+          <div key={p.id} className="border rounded-lg overflow-hidden">
+            <img src={p.image} alt={p.name} className="w-full h-32 object-cover" />
+            <div className="p-2">
+              <div className="font-bold text-xs">{p.name} - ${p.price}</div>
+              <button onClick={()=>setCart([...cart, p])} className="w-full bg-black text-white text-xs py-2 rounded-full mt-1">Add to Cart</button>
+              <button onClick={()=>joinLive((p.id % 15)+1, p)} className="w-full bg-green-500 text-black text-xs py-1 rounded-full mt-1 font-black">Live Sell This</button>
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
-
       {showLive && (
         <div className="fixed inset-0 bg-black/95 z-50 p-2 overflow-auto">
           <div className="bg-gray-900 max-w-md mx-auto rounded-2xl p-4 text-white">
@@ -93,10 +89,11 @@ export default function Page() {
             <div className="relative w-full h-64 bg-black rounded-xl mt-3 border">
               <video ref={localVid} autoPlay muted playsInline className="w-full h-full object-cover hidden" />
               {!isLive && <div className="flex h-full items-center justify-center opacity-60">Camera - Go Live</div>}
-              {isLive && <div className="absolute bottom-2 left-2 bg-red-600 px-2 py-1 rounded-full text-xs">REC LIVE Room {selectedRoom}</div>}
+              {isLive && <div className="absolute bottom-2 left-2 bg-red-600 px-2 py-1 rounded-full text-xs">REC Room {selectedRoom} - {selectedMusic?.title || ''}</div>}
             </div>
+            <MusicPanel onSelect={(song)=> setSelectedMusic(song)} />
             <div className="flex gap-2 mt-3">
-              <button onClick={()=>joinLive(selectedRoom)} className="flex-1 bg-green-500 text-black font-black p-3 rounded-xl text-xs">Live + Auto Save</button>
+              <button onClick={()=>joinLive(selectedRoom)} className="flex-1 bg-green-500 text-black font-black p-3 rounded-xl text-xs">Live</button>
               <button onClick={leaveAndSave} className="flex-1 bg-gray-700 font-black p-3 rounded-xl text-xs">Leave</button>
             </div>
           </div>

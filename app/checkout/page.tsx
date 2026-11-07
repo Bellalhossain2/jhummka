@@ -1,7 +1,9 @@
-export const dynamic = 'force-dynamic'
 "use client"
+
+export const dynamic = 'force-dynamic'
+
 import { useCart } from "@/components/cart-provider"
-import { Button } from "@//components/ui/button"
+import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 
 export default function CheckoutPage() {

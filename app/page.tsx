@@ -4,6 +4,7 @@ import { ref, set, onValue, remove, get } from 'firebase/database'
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import MusicPanel from '@/components/music-panel'
+import TrimPanel from '@/components/trim-panel'
 
 const PRODUCTS = [
   {id:1, name:"Fresh Guava", price:"0.8", image:"https://images.unsplash.com/photo-1536511132770-e5058c7fbf0a?w=400"},
@@ -23,7 +24,10 @@ export default function Page() {
   const [user, setUser] = useState<any>(null)
   const [selectedProduct, setSelectedProduct] = useState<any>(PRODUCTS[0])
   const [selectedMusic, setSelectedMusic] = useState<any>(null)
+  const [fullBlob, setFullBlob] = useState<Blob|null>(null)
   const localVid = useRef<HTMLVideoElement>(null)
+  const mediaRecorder = useRef<MediaRecorder|null>(null)
+  const recordedChunks = useRef<Blob[]>([])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
@@ -44,12 +48,24 @@ export default function Page() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true})
       if(localVid.current){ localVid.current.srcObject = stream; localVid.current.style.display='block' }
+      recordedChunks.current = []
+      mediaRecorder.current = new MediaRecorder(stream)
+      mediaRecorder.current.ondataavailable = (e) => { if(e.data.size>0) recordedChunks.current.push(e.data) }
+      mediaRecorder.current.start(1000)
       await set(ref(db, 'jhummka_shop_rooms_v24/room_'+roomNum), { seller: user.displayName, sellerId: user.uid, productId: product ? product.id : selectedProduct.id, productName: product ? product.name : selectedProduct.name, music: selectedMusic?.title || 'No Music', time: Date.now() })
       setIsLive(true)
     } catch(e:any){ alert(e.message) }
   }
 
   const leaveAndSave = async () => {
+    if(mediaRecorder.current && mediaRecorder.current.state !== 'inactive'){
+      mediaRecorder.current.stop()
+      await new Promise(r=>setTimeout(r,600))
+    }
+    if(recordedChunks.current.length>0){
+      const blob = new Blob(recordedChunks.current, {type:'video/webm'})
+      setFullBlob(blob)
+    }
     const snap = await get(ref(db, 'jhummka_shop_rooms_v24/room_'+selectedRoom))
     if(snap.exists() && snap.val().sellerId === user?.uid) await remove(ref(db, 'jhummka_shop_rooms_v24/room_'+selectedRoom))
     setIsLive(false)
@@ -89,12 +105,13 @@ export default function Page() {
             <div className="relative w-full h-64 bg-black rounded-xl mt-3 border">
               <video ref={localVid} autoPlay muted playsInline className="w-full h-full object-cover hidden" />
               {!isLive && <div className="flex h-full items-center justify-center opacity-60">Camera - Go Live</div>}
-              {isLive && <div className="absolute bottom-2 left-2 bg-red-600 px-2 py-1 rounded-full text-xs">REC Room {selectedRoom} - {selectedMusic?.title || ''}</div>}
+              {isLive && <div className="absolute bottom-2 left-2 bg-red-600 px-2 py-1 rounded-full text-xs">REC Room {selectedRoom}</div>}
             </div>
             <MusicPanel onSelect={(song)=> setSelectedMusic(song)} />
+            <TrimPanel productId={selectedProduct.id} fullBlob={fullBlob} />
             <div className="flex gap-2 mt-3">
-              <button onClick={()=>joinLive(selectedRoom)} className="flex-1 bg-green-500 text-black font-black p-3 rounded-xl text-xs">Live</button>
-              <button onClick={leaveAndSave} className="flex-1 bg-gray-700 font-black p-3 rounded-xl text-xs">Leave</button>
+              <button onClick={()=>joinLive(selectedRoom)} className="flex-1 bg-green-500 text-black font-black p-3 rounded-xl text-xs">Live + Auto Save</button>
+              <button onClick={leaveAndSave} className="flex-1 bg-gray-700 font-black p-3 rounded-xl text-xs">Leave & Save</button>
             </div>
           </div>
         </div>

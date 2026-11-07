@@ -21,23 +21,12 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   title: 'Jhummka - Handcrafted Gold Heritage Jewellery',
-  description:
-    'Jhummka crafts heirloom gold jhumkas, temple necklaces and bridal sets. Timeless Indian craftsmanship, reimagined for the modern connoisseur.',
-  generator: 'v0.app',
+  description: 'Jhummka crafts heirloom gold jhumkas, temple necklaces and bridal sets.',
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
+      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
+      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
     ],
-  },
-  verification: {
-    google: 'your-google-verification-code',
   },
 }
 
@@ -52,10 +41,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
-      <head>
-        {/* Google AdSense - Your Publisher ID pub-7121561674177540 */}
-        <meta name="google-adsense-account" content="ca-pub-7121561674177540" />
-      </head>
       <body>
         <Script
           async

@@ -1,5 +1,5 @@
-"use client"
 export const dynamic = 'force-dynamic'
+"use client"
 import { useCart } from "@/components/cart-provider"
 import { Button } from "@//components/ui/button"
 import { useState, useEffect } from "react"

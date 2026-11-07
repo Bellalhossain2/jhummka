@@ -55,8 +55,8 @@ export default function Page() {
       mediaRecorder.current = new MediaRecorder(stream)
       mediaRecorder.current.ondataavailable = (e) => { if(e.data.size>0) recordedChunks.current.push(e.data) }
       mediaRecorder.current.start(1000)
-      await set(ref(db, 'jhummka_shop_rooms_v24/room_'+roomNum), { seller: user.displayName, sellerId: user.uid, productId: product?.id || 1 }}
-      setIsLive(true)
+      await set(ref(db, 'jhummka_shop_rooms_v24/room_'+roomNum), { seller: user?.displayName || 'Seller', sellerId: user?.uid || 'anon', productId: p?.id || 1 }) 
+        setIsLive(true)
     } catch(e:any){ alert(e.message) }
   }
 

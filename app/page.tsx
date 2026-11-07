@@ -5,6 +5,7 @@ import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebas
 import { db, auth } from '@/lib/firebase'
 import MusicPanel from '@/components/music-panel'
 import TrimPanel from '@/components/trim-panel'
+import StickersAds from '@/components/stickers-ads'
 
 const PRODUCTS = [
   {id:1, name:"Fresh Guava", price:"0.8", image:"https://images.unsplash.com/photo-1536511132770-e5058c7fbf0a?w=400"},
@@ -25,6 +26,8 @@ export default function Page() {
   const [selectedProduct, setSelectedProduct] = useState<any>(PRODUCTS[0])
   const [selectedMusic, setSelectedMusic] = useState<any>(null)
   const [fullBlob, setFullBlob] = useState<Blob|null>(null)
+  const [adMode, setAdMode] = useState('stop')
+  const [stickers, setStickers] = useState<string[]>([])
   const localVid = useRef<HTMLVideoElement>(null)
   const mediaRecorder = useRef<MediaRecorder|null>(null)
   const recordedChunks = useRef<Blob[]>([])
@@ -102,12 +105,16 @@ export default function Page() {
                 return <div key={n} onClick={()=>setSelectedRoom(n)} className="p-2 rounded-xl text-xs text-center border-2 border-gray-600 cursor-pointer">Room {n}<br/><small>{data ? data.seller : 'Empty'}</small></div>
               })}
             </div>
-            <div className="relative w-full h-64 bg-black rounded-xl mt-3 border">
+            <div className="relative w-full h-64 bg-black rounded-xl mt-3 border overflow-hidden">
+              {adMode!=='stop' && <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-black text-[10px] font-black p-1 text-center z-10">TOP AD - {selectedProduct.name}</div>}
+              {(adMode==='both' || adMode==='bottom') && <div className="absolute bottom-0 left-0 right-0 bg-green-400 text-black text-[10px] font-black p-1 text-center z-10">BOTTOM AD</div>}
+              <div className="absolute top-8 left-2 text-2xl z-10">{stickers.join(' ')}</div>
               <video ref={localVid} autoPlay muted playsInline className="w-full h-full object-cover hidden" />
               {!isLive && <div className="flex h-full items-center justify-center opacity-60">Camera - Go Live</div>}
-              {isLive && <div className="absolute bottom-2 left-2 bg-red-600 px-2 py-1 rounded-full text-xs">REC Room {selectedRoom}</div>}
+              {isLive && <div className="absolute bottom-8 left-2 bg-red-600 px-2 py-1 rounded-full text-xs">REC Room {selectedRoom}</div>}
             </div>
             <MusicPanel onSelect={(song)=> setSelectedMusic(song)} />
+            <StickersAds onAdChange={(m)=>setAdMode(m)} onSticker={(s)=>setStickers(prev=>[...prev,s].slice(-5))} />
             <TrimPanel productId={selectedProduct.id} fullBlob={fullBlob} />
             <div className="flex gap-2 mt-3">
               <button onClick={()=>joinLive(selectedRoom)} className="flex-1 bg-green-500 text-black font-black p-3 rounded-xl text-xs">Live + Auto Save</button>

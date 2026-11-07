@@ -86,6 +86,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 export function useCart() {
   const ctx = useContext(CartContext)
-  if (!ctx) return { items: [], cartTotal: 0, isOpen: false, count: 0, subtotal: 0, openCart: () => {}, closeCart: () => {}, addItem: () => {}, removeItem: () => {}, updateQuantity: () => {}, clearCart: () => {} } as any
+    if (!ctx) return { items: [], cartTotal: 0, count: 0, subtotal: 0, isOpen: false, openCart: () => {}, closeCart: () => {}, addItem: () => {}, removeItem: () => {}, updateQuantity: () => {}, clearCart: () => {} } as any
     return ctx
 }
